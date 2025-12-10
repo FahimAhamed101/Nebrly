@@ -27,8 +27,10 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     // Set default email and password after the widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.emailController.text = "afaysal220@gmail.com";
-      controller.passwordController.text = "AbcD@7281";
+      // controller.emailController.text = "prov1@gmail.com";
+      // controller.passwordController.text = "Password@123";
+       controller.emailController.text = "afaysal220@gmail.com";
+          controller.passwordController.text = "AbcD@7281";
     });
   }
 
@@ -89,11 +91,19 @@ class _LoginScreenState extends State<LoginScreen> {
             SizedBox(height: 16),
             Align(
               alignment: Alignment.topRight,
-              child: AppText(
-                "Forgot Password?",
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                color: AppColors.textcolor,
+              child: InkWell(
+                onTap: () {
+                  // Your forgot password logic here
+                  // Note: You had controller.pickProfileImage() which doesn't seem
+                  // right for a "Forgot Password?" link
+                  Get.toNamed('/reset-password'); // Example navigation
+                },
+                child: AppText(
+                  "Forgot Password?",
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  color: AppColors.textcolor,
+                ),
               ),
             ),
             SizedBox(height: size.height * 0.04),

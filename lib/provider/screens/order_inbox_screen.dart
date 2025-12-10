@@ -18,9 +18,12 @@ class OrderInboxScreen extends StatefulWidget {
 
 class _OrderInboxScreenState extends State<OrderInboxScreen> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _messageController = TextEditingController();
   bool _isWaitingForAcceptance = false;
   bool _showFeedback = false;
   bool _isCancelled = false;
+  bool _showAddQuickChatButton = false;
+  bool _hasAcceptedOrCancelledAmount = false; // NEW: Track if amount was accepted/cancelled
   List<QuickMessage> _quickMessages = [];
   final List<ChatMessage> _messages = [
     ChatMessage(
@@ -40,12 +43,13 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
     super.initState();
     // Check if order is cancelled based on order status
     _isCancelled = widget.order.status == OrderStatus.cancelled;
-    
+
     // Check if order is completed - if so, show feedback immediately
     if (widget.order.status == OrderStatus.completed) {
       _showFeedback = true;
+      _showAddQuickChatButton = true;
     }
-    
+
     // Load quick messages
     _loadQuickMessages();
   }
@@ -100,6 +104,27 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
     });
 
     // Auto-scroll to bottom
+    _scrollToBottom();
+  }
+
+  void _sendMessage() {
+    if (_messageController.text.trim().isEmpty) return;
+
+    final messageText = _messageController.text.trim();
+    setState(() {
+      _messages.add(ChatMessage(
+        text: messageText,
+        isFromUser: true,
+        timestamp: DateTime.now(),
+      ));
+      _messageController.clear();
+    });
+
+    // Auto-scroll to bottom
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -109,14 +134,37 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
         );
       }
     });
-
   }
 
-  // Preset quick questions only; add/navigate screens disabled
+  void _handleDoneButtonPressed() {
+    // Hide the feedback message and show the green add quick chat button
+    setState(() {
+      _showFeedback = false;
+      _showAddQuickChatButton = true;
+    });
+  }
+
+  void _navigateToQuickChatPage() {
+    // Navigate to quick chat page
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => QuickChatPage(order: widget.order),
+      ),
+    );
+  }
+
+  void _handleAmountAcceptedOrCancelled() {
+    // When amount is accepted or cancelled from bottom sheet
+    setState(() {
+      _hasAcceptedOrCancelledAmount = true;
+    });
+  }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _messageController.dispose();
     super.dispose();
   }
 
@@ -147,8 +195,8 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
               },
               style: TextButton.styleFrom(
                 backgroundColor: (_isWaitingForAcceptance || _showFeedback || _isCancelled || widget.order.status == OrderStatus.completed)
-                  ? Colors.grey[300] 
-                  : const Color(0xFF0E7A60),
+                    ? Colors.grey[300]
+                    : const Color(0xFF0E7A60),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -158,8 +206,8 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
                 _isCancelled ? 'Cancelled' : (widget.order.status == OrderStatus.completed ? 'Completed' : 'Task Done'),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: (_isWaitingForAcceptance || _showFeedback || _isCancelled || widget.order.status == OrderStatus.completed)
-                    ? Colors.grey[600] 
-                    : Colors.white,
+                      ? Colors.grey[600]
+                      : Colors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -169,42 +217,179 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
         ],
       ),
       body: SafeArea(
-        child: _isCancelled 
-          ? _buildCancelledOrderView()
-          : Column(
-              children: [
-                // Order Details Card
-                _buildOrderDetailsCard(),
-                
-                // Chat Messages and Feedback (scrollable together)
-                Expanded(
-                  child: _showFeedback
-                    ? SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            SizedBox(
-                              height: 200,
-                              child: _buildChatMessages(),
-                            ),
-                            _buildFeedbackMessage(),
-                          ],
-                        ),
-                      )
-                    : _buildChatMessages(),
+        child: _isCancelled
+            ? _buildCancelledOrderView()
+            : Column(
+          children: [
+            // Order Details Card
+            _buildOrderDetailsCard(),
+
+            // Chat Messages and Feedback (scrollable together)
+            Expanded(
+              child: _showFeedback
+                  ? SingleChildScrollView(
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: 200,
+                      child: _buildChatMessages(),
+                    ),
+                    _buildFeedbackMessage(),
+                  ],
                 ),
-                
-                // Pending message
-                if (_isWaitingForAcceptance)
-                  _buildWaitingMessage(),
-                
-                // Quick Reply Buttons
-                if (!_isWaitingForAcceptance && !_showFeedback)
-                  _buildQuickReplies(),
-              ],
+              )
+                  : _buildChatMessages(),
             ),
+
+            // Pending message
+            if (_isWaitingForAcceptance)
+              _buildWaitingMessage(),
+
+            // Green Add Quick Chat Button (Above Quick Questions)
+            if (_showAddQuickChatButton)
+              _buildGreenAddQuickChatButton(),
+
+            // Quick Reply Buttons
+            if (!_isWaitingForAcceptance && !_showFeedback)
+              _buildQuickReplies(),
+          ],
+        ),
       ),
-      floatingActionButton: null,
+      // Floating message input button
+      floatingActionButton: _getCurrentFAB(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+    );
+  }
+
+  Widget? _getCurrentFAB() {
+    // If amount was accepted/cancelled, show message input FAB
+    if (_hasAcceptedOrCancelledAmount) {
+      return _buildMessageInputFAB();
+    }
+
+    // Otherwise show normal FAB logic
+    if (_showAddQuickChatButton || _isWaitingForAcceptance || _showFeedback || _isCancelled || widget.order.status == OrderStatus.completed) {
+      return null;
+    }
+
+    return _buildMessageInputFAB();
+  }
+
+  Widget _buildGreenAddQuickChatButton() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: ElevatedButton.icon(
+        onPressed: _navigateToQuickChatPage,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF0E7A60), // Green color
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          elevation: 4,
+          shadowColor: Colors.black.withOpacity(0.2),
+        ),
+        icon: const Icon(Icons.add, size: 20),
+        label: Text(
+          'Add Quick Chat',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMessageInputFAB() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
+      child: Material(
+        elevation: 4,
+        borderRadius: BorderRadius.circular(28),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Attach button
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.grey[100],
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.attach_file,
+                    color: Colors.grey[600],
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    // Handle attachment
+                  },
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // Message input field
+              Expanded(
+                child: TextField(
+                  controller: _messageController,
+                  decoration: InputDecoration(
+                    hintText: 'Write your message...',
+                    hintStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[500],
+                      fontSize: 14,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontSize: 14,
+                  ),
+                  maxLines: 1,
+                  onSubmitted: (value) => _sendMessage(),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // Send button
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF0E7A60),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.send,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  onPressed: _sendMessage,
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -246,7 +431,7 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          
+
           // Provider Info
           Row(
             children: [
@@ -284,7 +469,7 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          
+
           // Address
           Row(
             children: [
@@ -312,7 +497,7 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
             ],
           ),
           const SizedBox(height: 6),
-          
+
           // Date and Time
           Row(
             children: [
@@ -324,7 +509,7 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
               ),
             ],
           ),
-          
+
           // Problem Note
           if (widget.order.problemDescription != null) ...[
             const SizedBox(height: 8),
@@ -370,7 +555,7 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          
+
           // Messages
           Expanded(
             child: ListView.builder(
@@ -391,8 +576,8 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment: message.isFromUser 
-            ? MainAxisAlignment.start 
+        mainAxisAlignment: message.isFromUser
+            ? MainAxisAlignment.start
             : MainAxisAlignment.end,
         children: [
           if (message.isFromUser) ...[
@@ -407,8 +592,8 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: message.isFromUser 
-                    ? Colors.grey[200] 
+                color: message.isFromUser
+                    ? Colors.grey[200]
                     : const Color(0xFF0E7A60),
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -554,8 +739,10 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
       useSafeArea: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => TaskDoneBottomSheet(
+      builder: (context) => PaymentConfirmationBottomSheet(
         order: widget.order,
+        onAmountAccepted: _handleAmountAcceptedOrCancelled,
+        onAmountCancelled: _handleAmountAcceptedOrCancelled,
         onTaskCompleted: () {
           Navigator.of(context).pop();
           setState(() {
@@ -596,7 +783,7 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          
+
           // Waiting message
           Expanded(
             child: Column(
@@ -631,7 +818,7 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
       children: [
         // Order Details Card
         _buildOrderDetailsCard(),
-        
+
         // Cancelled content
         Expanded(
           child: Padding(
@@ -657,7 +844,7 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                
+
                 // Cancellation reason label
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -676,7 +863,7 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                
+
                 // Timestamp
                 Text(
                   '1:44 PM',
@@ -686,7 +873,7 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
                   ),
                 ),
                 const SizedBox(height: 40),
-                
+
                 // Report customer link
                 TextButton(
                   onPressed: () {
@@ -740,7 +927,7 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Title
           Text(
             'Received feedback from the provider',
@@ -752,7 +939,7 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          
+
           // Feedback message
           Text(
             'Thank you for your order! It was a pleasure working on your request. I hope the service met your expectations. Please feel free to reach out if you need anything else!',
@@ -766,29 +953,25 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 12),
-          
+
           // Star rating
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(5, (index) => 
-              const Icon(
-                Icons.star,
-                color: Colors.amber,
-                size: 18,
-              ),
+            children: List.generate(5, (index) =>
+            const Icon(
+              Icons.star,
+              color: Colors.amber,
+              size: 18,
+            ),
             ),
           ),
           const SizedBox(height: 12),
-          
-          // Done button
+
+          // Done button (UPDATED with onPressed handler)
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _showFeedback = false;
-                });
-              },
+              onPressed: _handleDoneButtonPressed,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.grey[100],
                 foregroundColor: Colors.black,
@@ -810,7 +993,7 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          
+
           // Report customer link
           TextButton(
             onPressed: () {
@@ -833,7 +1016,7 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
   String _formatTime(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
-    
+
     if (difference.inMinutes < 60) {
       return '${difference.inMinutes}m ago';
     } else if (difference.inHours < 24) {
@@ -844,21 +1027,48 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
   }
 }
 
-class TaskDoneBottomSheet extends StatefulWidget {
+// QuickChatPage Widget (You'll need to create this separately)
+class QuickChatPage extends StatelessWidget {
   final Order order;
-  final VoidCallback? onTaskCompleted;
 
-  const TaskDoneBottomSheet({
+  const QuickChatPage({
     super.key,
     required this.order,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Quick Chat'),
+      ),
+      body: Center(
+        child: Text('Quick Chat Page for ${order.serviceName}'),
+      ),
+    );
+  }
+}
+
+// Updated PaymentConfirmationBottomSheet with Accept/Cancel buttons
+class PaymentConfirmationBottomSheet extends StatefulWidget {
+  final Order order;
+  final VoidCallback? onAmountAccepted;
+  final VoidCallback? onAmountCancelled;
+  final VoidCallback? onTaskCompleted;
+
+  const PaymentConfirmationBottomSheet({
+    super.key,
+    required this.order,
+    this.onAmountAccepted,
+    this.onAmountCancelled,
     this.onTaskCompleted,
   });
 
   @override
-  State<TaskDoneBottomSheet> createState() => _TaskDoneBottomSheetState();
+  State<PaymentConfirmationBottomSheet> createState() => _PaymentConfirmationBottomSheetState();
 }
 
-class _TaskDoneBottomSheetState extends State<TaskDoneBottomSheet> {
+class _PaymentConfirmationBottomSheetState extends State<PaymentConfirmationBottomSheet> {
   final TextEditingController _amountController = TextEditingController(text: '\$500');
 
   @override
@@ -890,7 +1100,7 @@ class _TaskDoneBottomSheetState extends State<TaskDoneBottomSheet> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          
+
           // Content
           Padding(
             padding: const EdgeInsets.all(24),
@@ -919,7 +1129,7 @@ class _TaskDoneBottomSheetState extends State<TaskDoneBottomSheet> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                
+
                 // Title
                 Text(
                   'Task Completed',
@@ -930,7 +1140,7 @@ class _TaskDoneBottomSheetState extends State<TaskDoneBottomSheet> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                
+
                 // Budget info
                 Text(
                   'Your Budget avg. \$${widget.order.averagePrice.toInt()}/hr',
@@ -940,7 +1150,7 @@ class _TaskDoneBottomSheetState extends State<TaskDoneBottomSheet> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Amount input section
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -997,33 +1207,66 @@ class _TaskDoneBottomSheetState extends State<TaskDoneBottomSheet> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 32),
-                
-                // Done button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      widget.onTaskCompleted?.call();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0E7A60),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                const SizedBox(height: 24),
+
+                // Accept and Cancel buttons
+                Row(
+                  children: [
+                    // Cancel button
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          widget.onAmountCancelled?.call();
+                          Navigator.of(context).pop();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey[100],
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          'Cancel',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.black,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
                       ),
-                      elevation: 0,
                     ),
-                    child: Text(
-                      'Done',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
+                    const SizedBox(width: 12),
+
+                    // Accept button
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          widget.onAmountAccepted?.call();
+                          widget.onTaskCompleted?.call();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0E7A60),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          'Accept',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),

@@ -26,7 +26,7 @@ class ProviderHomeScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     // Provider header (always show)
-                    ProviderHeader(profile: controller.providerProfile.value),
+                    ProviderHeader(),
 
                     // Loading state
                     Obx(() {
@@ -212,7 +212,7 @@ class ProviderHomeScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                'Accepted Requests',
+                'Accepted Requests1',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w400,
                   color: KoreColors.textDark,

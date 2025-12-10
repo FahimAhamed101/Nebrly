@@ -106,27 +106,27 @@ class _CreateBundleBottomSheetState extends State<CreateBundleBottomSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-            // Header
-            const  Center(
-              child: Column(
-                children: [
-                   AppText(
-                    "Create Bundle",
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                   SizedBox(height: 8),
-                  AppText(
-                    "Bundle Target: 3 Users (within 10 miles)",
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.textcolor,
-                  ),
-                ],
+              // Header
+              const  Center(
+                child: Column(
+                  children: [
+                    AppText(
+                      "Create Bundle",
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                    SizedBox(height: 8),
+                    AppText(
+                      "Bundle Target: 3 Users (within 10 miles)",
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.textcolor,
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 30),
+              const SizedBox(height: 30),
 
               const AppText(
                 "Bundle title",
@@ -146,56 +146,56 @@ class _CreateBundleBottomSheetState extends State<CreateBundleBottomSheet> {
               const SizedBox(height: 12),
               AppTextField(controller: discription, hint: "Bundle description.."),
               const SizedBox(height: 12),
-            // Primary/Secondary/Tertiary Dropdowns
-             const AppText(
-              "Select Category*",
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.black,
-            ),
-             const SizedBox(height: 12),
+              // Primary/Secondary/Tertiary Dropdowns
+              const AppText(
+                "Select Category*",
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Colors.black,
+              ),
+              const SizedBox(height: 12),
 
-            // Primary + Secondary (side by side)
-            Row(
-              children: [
-                Expanded(
-                  child: CustomSingleSelectDropdown(
-                    hint: "Select Primary",
-                    items: primaryOptions,
-                    selectedItem: selectedPrimary,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedPrimary = value;
-                        // reset dependent selections
-                        selectedSecondary = null;
-                        selectedTertiary = null;
-                      });
-                    },
+              // Primary + Secondary (side by side)
+              Row(
+                children: [
+                  Expanded(
+                    child: CustomSingleSelectDropdown(
+                      hint: "Select Primary",
+                      items: primaryOptions,
+                      selectedItem: selectedPrimary,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedPrimary = value;
+                          // reset dependent selections
+                          selectedSecondary = null;
+                          selectedTertiary = null;
+                        });
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Opacity(
-                    opacity: selectedPrimary == null ? 0.5 : 1,
-                    child: IgnorePointer(
-                      ignoring: selectedPrimary == null,
-                      child: CustomSingleSelectDropdown(
-                        hint: "Select Service",
-                        items: secondaryByPrimary[selectedPrimary] ?? [],
-                        selectedItem: selectedSecondary,
-                        onChanged: (value) {
-                          setState(() {
-                            selectedSecondary = value;
-                            selectedTertiary = null;
-                          });
-                        },
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Opacity(
+                      opacity: selectedPrimary == null ? 0.5 : 1,
+                      child: IgnorePointer(
+                        ignoring: selectedPrimary == null,
+                        child: CustomSingleSelectDropdown(
+                          hint: "Select Service",
+                          items: secondaryByPrimary[selectedPrimary] ?? [],
+                          selectedItem: selectedSecondary,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedSecondary = value;
+                              selectedTertiary = null;
+                            });
+                          },
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
+                ],
+              ),
+              const SizedBox(height: 12),
 
             // Tertiary dropdown depends on secondary
             Opacity(
@@ -282,14 +282,14 @@ class _CreateBundleBottomSheetState extends State<CreateBundleBottomSheet> {
             ),
             
             const SizedBox(height: 20),
-            
 
-             Obx(() {
+
+              Obx(() {
                 return PrimaryButton(
                   backgroundColor: const Color(0xFFFF7043),
                   loading: controller.isLoading.value,
                   text: "Publish Bundle",
-                  onTap: () {
+                  onTap: () async {
                     final titleText = title.text.trim();
                     final descriptionText = discription.text.trim();
 
@@ -299,15 +299,12 @@ class _CreateBundleBottomSheetState extends State<CreateBundleBottomSheet> {
                       return;
                     }
 
-
-                    // For example, from dropdowns, date/time pickers, etc.
-                    final primary = selectedPrimary;         // e.g., "Interior"
-                    final secondary = selectedSecondary;     // e.g., "Home Repairs & Maintenance"
-                    final tertiary = selectedTertiary;       // e.g., "Plumbing"
-
-                    final date = serviceDate;                // DateTime?
-                    final from = fromTime;                   // TimeOfDay?
-                    final to = toTime;                       // TimeOfDay?
+                    final primary = selectedPrimary;
+                    final secondary = selectedSecondary;
+                    final tertiary = selectedTertiary;
+                    final date = serviceDate;
+                    final from = fromTime;
+                    final to = toTime;
 
                     // Validate category selections
                     if (primary == null || secondary == null || tertiary == null) {
@@ -327,15 +324,39 @@ class _CreateBundleBottomSheetState extends State<CreateBundleBottomSheet> {
                     final fromTimeStr = "${from.hour.toString().padLeft(2, '0')}:${from.minute.toString().padLeft(2, '0')}";
                     final toTimeStr = "${to.hour.toString().padLeft(2, '0')}:${to.minute.toString().padLeft(2, '0')}";
 
+                    // Prepare request body according to API documentation
+                    final bundleData = {
+                      "category": primary,
+                      "categoryTypeName": secondary,
+                      "services": [tertiary],
+                      "serviceDate": formattedDate,
+                      "serviceTimeStart": fromTimeStr,
+                      "serviceTimeEnd": toTimeStr,
+                      "title": titleText,
+                      "description": descriptionText,
+                    };
 
+                    // Print the request for debugging
+                    print("📦 Creating bundle with data:");
+                    print("URL: https://naibrly-backend.onrender.com/api/bundles/create");
+                    print("Request Body: $bundleData");
+
+                    // Call the controller method to create bundle
+                    final success = await controller.createBundle(bundleData, context);
+
+                    // If successful, close the bottom sheet
+                    if (success) {
+                      Navigator.of(context).pop();
+                      showSuccess(context, "Bundle created successfully!");
+                    }
                   },
                 );
               }),
               const SizedBox(height: 10),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
@@ -347,6 +368,7 @@ class _CreateBundleBottomSheetState extends State<CreateBundleBottomSheet> {
       ),
     );
   }
+
   void showSuccess(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -355,6 +377,7 @@ class _CreateBundleBottomSheetState extends State<CreateBundleBottomSheet> {
       ),
     );
   }
+
   Widget _buildCategoryChip(String text) {
     return Container(
       height: 48,
@@ -410,9 +433,9 @@ class _CreateBundleBottomSheetState extends State<CreateBundleBottomSheet> {
           children: [
             Expanded(
               child: Text(
-                selectedDate != null 
-                  ? "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}"
-                  : hint,
+                selectedDate != null
+                    ? "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}"
+                    : hint,
                 style: TextStyle(
                   fontSize: 14,
                   color: selectedDate != null ? Colors.black : Colors.grey,
@@ -454,9 +477,9 @@ class _CreateBundleBottomSheetState extends State<CreateBundleBottomSheet> {
           children: [
             Expanded(
               child: Text(
-                selectedTime != null 
-                  ? selectedTime!.format(context)
-                  : hint,
+                selectedTime != null
+                    ? selectedTime!.format(context)
+                    : hint,
                 style: TextStyle(
                   fontSize: 14,
                   color: selectedTime != null ? Colors.black : Colors.grey,

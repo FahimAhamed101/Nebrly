@@ -1,20 +1,31 @@
+// views/screen/Users/Request/user_request_inbox_screen.dart
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:naibrly/models/user_request.dart';
+import 'package:get/get.dart';
+import 'package:naibrly/models/user_request1.dart';
 import 'package:naibrly/models/quick_message.dart';
 import 'package:naibrly/utils/app_colors.dart';
 import 'package:naibrly/views/base/AppText/appText.dart';
-// Preset quick questions only; add/edit screens not used
 import 'package:naibrly/widgets/payment_confirmation_bottom_sheet.dart';
 import 'package:naibrly/widgets/naibrly_now_bottom_sheet.dart';
-import 'package:naibrly/views/screen/Users/Request/review_confirm_screen.dart';
+
+import '../../../../controller/quick_chat_controller.dart';
+import '../../../../controller/socket_controller.dart';
+import 'QuickChatPage.dart';
 
 class UserRequestInboxScreen extends StatefulWidget {
   final UserRequest request;
+  final String? bundleId;
+  final String? requestId;
+  final String? customerId;
 
   const UserRequestInboxScreen({
     super.key,
     required this.request,
+    this.bundleId,
+    this.requestId,
+    this.customerId,
   });
 
   @override
@@ -23,109 +34,253 @@ class UserRequestInboxScreen extends StatefulWidget {
 
 class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
   final ScrollController _scrollController = ScrollController();
+  final QuickChatController _quickChatController = Get.find<QuickChatController>();
+  final SocketController _socketController = Get.find<SocketController>();
+
   bool _isWaitingForAcceptance = false;
   bool _showFeedback = false;
   bool _isCancelled = false;
   String? _cancellationReason;
   DateTime? _cancellationTime;
-  List<QuickMessage> _quickMessages = [];
-  
-  // Timer and completion request state
-  bool _showCompletionRequest = false;
-  int _timerCountdown = 10;
-  Timer? _timer;
-  final List<ChatMessage> _messages = [
-    ChatMessage(
-      text: "Your service request has been confirmed!",
-      isFromUser: false,
-      isFromProvider: true,
-      timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-    ),
-    ChatMessage(
-      text: "Thank you for confirming your order! I'll begin work shortly.",
-      isFromUser: true,
-      isFromProvider: false,
-      timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-    ),
-  ];
+
+  StreamSubscription? _messagesSubscription;
+
+  List<ChatMessage> _messages = [];
+  bool _isLoadingHistory = true;
 
   @override
   void initState() {
     super.initState();
-    // Check if request is cancelled based on request status
-    _isCancelled = widget.request.status == RequestStatus.cancelled;
-    
-    // If request is already cancelled, set up cancellation data
+
+    // Check if request is cancelled
+    _isCancelled = widget.request.status.toLowerCase() == 'cancelled';
+
     if (_isCancelled) {
-      _cancellationReason = widget.request.cancellationReason ?? 'The service was no longer required due to unforeseen circumstances.';
+      _cancellationReason = widget.request.cancellationReason ??
+          'The service was no longer required due to unforeseen circumstances.';
       _cancellationTime = widget.request.cancellationTime ?? DateTime.now();
     }
-    
-    // Check if request is done - if so, show feedback immediately
-    if (widget.request.status == RequestStatus.done) {
+
+    // Check if request is done
+    if (widget.request.status.toLowerCase() == 'completed' ||
+        widget.request.status.toLowerCase() == 'done') {
       _showFeedback = true;
     }
-    
-    // Start timer for accepted requests
-    if (widget.request.status == RequestStatus.accepted) {
-      _startCompletionTimer();
-    }
-    
+
     // Load quick messages
     _loadQuickMessages();
+
+    // Initialize socket connection
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeSocketConnection();
+    });
+  }
+
+  void _initializeSocketConnection() async {
+    try {
+      if (kDebugMode) {
+        print('🔗 Initializing socket connection...');
+        print('Request ID: ${widget.requestId}');
+        print('Bundle ID: ${widget.bundleId}');
+        print('Customer ID: ${widget.customerId}');
+      }
+
+      // Ensure socket is connected
+      if (!_socketController.isConnected) {
+        if (kDebugMode) {
+          print('🔄 Socket not connected, reconnecting...');
+        }
+        await _socketController.reconnect();
+        await Future.delayed(const Duration(seconds: 1));
+      }
+
+      // Join conversation and load history
+      await _socketController.joinConversation(
+        requestId: widget.requestId,
+        bundleId: widget.bundleId,
+        customerId: widget.customerId,
+      );
+
+      // Wait for history to load
+      await Future.delayed(const Duration(milliseconds: 1500));
+
+      // Load existing messages
+      _loadExistingMessages();
+
+      // Setup real-time message listener
+      _setupMessageListener();
+
+      setState(() {
+        _isLoadingHistory = false;
+      });
+
+      if (kDebugMode) {
+        print('✅ Socket connection initialized successfully');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Error initializing socket connection: $e');
+      }
+
+      setState(() {
+        _isLoadingHistory = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load messages: $e'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+  }
+
+  void _loadExistingMessages() {
+    try {
+      final existingMessages = _socketController.getMessagesForConversation(
+        requestId: widget.requestId,
+        bundleId: widget.bundleId,
+        customerId: widget.customerId,
+      );
+
+      if (kDebugMode) {
+        print('📜 UI: Loading ${existingMessages.length} existing messages from controller');
+        if (existingMessages.isNotEmpty) {
+          print('📜 UI: First message: ${existingMessages.first}');
+          print('📜 UI: Last message: ${existingMessages.last}');
+        }
+      }
+
+      if (existingMessages.isNotEmpty) {
+        final newMessages = existingMessages
+            .map((msg) => ChatMessage.fromSocketData(msg))
+            .toList();
+
+        // Always update to get latest messages
+        if (mounted) {
+          setState(() {
+            _messages = newMessages;
+          });
+
+          if (kDebugMode) {
+            print('✅ UI: Updated UI with ${_messages.length} messages');
+          }
+
+          // Scroll to bottom to show latest message
+          _scrollToBottom();
+        }
+      } else if (_messages.isEmpty) {
+        // Add initial welcome messages if no history
+        if (mounted) {
+          setState(() {
+            _messages = [
+              ChatMessage(
+                text: "Your service request has been confirmed!",
+                isFromUser: false,
+                isFromProvider: true,
+                timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
+              ),
+            ];
+          });
+        }
+
+        if (kDebugMode) {
+          print('ℹ️ UI: No existing messages, using default welcome message');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ UI: Error loading existing messages: $e');
+      }
+    }
+  }
+
+  void _setupMessageListener() {
+    // Cancel existing subscription
+    _messagesSubscription?.cancel();
+
+    // Listen to message changes via the stream controller
+    _messagesSubscription = _socketController.messagesChangeStream.listen((_) {
+      if (mounted) {
+        _loadExistingMessages();
+      }
+    });
+
+    if (kDebugMode) {
+      print('✅ Message listener set up');
+    }
   }
 
   Future<void> _loadQuickMessages() async {
-    final now = DateTime.now();
-    final List<String> presetQuestions = [
-      'How long does this job usually take?',
-      'Do I need to do anything to prepare before you arrive?',
-      'Do you bring your own tools and supplies, or do I need to provide anything?',
-      'Can you provide me an update when you will arrive?',
-      'Are you able to message me before you arrive?',
-      'Can you message me when the job is complete?',
-      'Is there an additional fee for same-day service?',
-      'Will there be any cleanup required after the job?',
-      'Do you offer any warranty or guarantee for the work?',
-      'What is the best contact number to reach you if needed?',
-    ];
-    setState(() {
-      _quickMessages = presetQuestions.asMap().entries.map((entry) {
-        final i = entry.key;
-        final text = entry.value;
-        return QuickMessage(
-          id: 'preset_$i',
-          message: text,
-          createdAt: now,
-          updatedAt: now,
-        );
-      }).toList();
-    });
-  }
-
-  void _startFeedbackTimer() {
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() {
-          _isWaitingForAcceptance = false;
-          _showFeedback = true;
-        });
+    try {
+      await _quickChatController.loadQuickMessages();
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Error loading quick messages: $e');
       }
-    });
+    }
   }
 
-  void _sendQuickMessage(QuickMessage message) {
-    // Add the quick message to the chat
-    setState(() {
-      _messages.add(ChatMessage(
-        text: message.message,
-        isFromUser: true,
-        isFromProvider: false,
-        timestamp: DateTime.now(),
-      ));
-    });
+  void _sendQuickMessage(QuickMessage message) async {
+    try {
+      if (kDebugMode) {
+        print('📤 UI: Sending quick message: ${message.message}');
+      }
 
-    // Auto-scroll to bottom
+      // Send via socket first
+      await _socketController.sendQuickChat(
+        quickChatId: message.id ?? '',
+        requestId: widget.requestId,
+        bundleId: widget.bundleId,
+        customerId: widget.customerId,
+      );
+
+      // Track usage in API
+      _quickChatController.sendQuickMessage(message);
+
+      if (kDebugMode) {
+        print('✅ UI: Quick message sent, reloading messages...');
+      }
+
+      // Force reload messages after a delay
+      await Future.delayed(const Duration(milliseconds: 800));
+      _loadExistingMessages();
+
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ UI: Error sending quick message: $e');
+      }
+
+      // Show error message in UI
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send message: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _navigateToQuickChatPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => QuickChatPage(
+          requestId: widget.requestId,
+          bundleId: widget.bundleId,
+          customerId: widget.customerId,
+          serviceName: widget.request.serviceName,
+          providerName: widget.request.provider?.fullName ?? widget.request.providerName ?? 'Provider',
+        ),
+      ),
+    );
+  }
+
+
+  void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -137,58 +292,63 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
     });
   }
 
-  // Add/Edit quick chats disabled in preset mode
-
   @override
   void dispose() {
     _scrollController.dispose();
-    _timer?.cancel();
+    _messagesSubscription?.cancel();
+
+    // Mark conversation as read when leaving
+    _socketController.markConversationAsRead(
+      requestId: widget.requestId,
+      bundleId: widget.bundleId,
+      customerId: widget.customerId,
+    );
+
     super.dispose();
   }
 
-  void _startCompletionTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() {
-          _timerCountdown--;
-        });
-        
-        if (_timerCountdown <= 0) {
-          timer.cancel();
-          setState(() {
-            _showCompletionRequest = true;
-          });
-        }
-      }
-    });
-  }
-
-  void _handleAcceptCompletion() {
-    // Navigate to review and confirm screen
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ReviewConfirmScreen(request: widget.request),
+  void _handleCopyToClipboard(String text, String label) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$label copied to clipboard: $text'),
+        backgroundColor: Colors.green,
       ),
     );
   }
 
-  void _handleCancelCompletion() {
-    setState(() {
-      _showCompletionRequest = false;
-    });
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Task completion cancelled.'),
-        backgroundColor: Colors.orange,
-      ),
+  void _showCancelRequestDialog() {
+    final providerName = widget.request.provider?.fullName ?? widget.request.providerName ?? 'Provider';
+
+    showCancelRequestBottomSheet(
+      context,
+      onNaibrlyNow: () {
+        showNaibrlyNowBottomSheet(
+          context,
+          serviceName: widget.request.serviceName,
+          providerName: providerName,
+        );
+      },
+      onCancelConfirmed: (reason) {
+        setState(() {
+          _isCancelled = true;
+          _cancellationReason = reason;
+          _cancellationTime = DateTime.now();
+        });
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final providerName = widget.request.provider?.fullName ?? widget.request.providerName ?? 'Provider';
+    final providerImage = widget.request.providerImage ?? widget.request.provider?.businessLogo?.url ?? widget.request.imagePath ?? 'assets/images/default_avatar.png';
+    final providerRating = widget.request.providerRating ?? widget.request.provider?.rating ?? 0.0;
+    final providerReviewCount = widget.request.providerReviewCount ?? 0;
+    final isCompleted = widget.request.status.toLowerCase() == 'completed' ||
+        widget.request.status.toLowerCase() == 'done';
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FB), // Match provider background
+      backgroundColor: const Color(0xFFF7F9FB),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -206,123 +366,325 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
           Container(
             margin: const EdgeInsets.only(right: 16),
             child: TextButton(
-              onPressed: (_isWaitingForAcceptance || _showFeedback || _isCancelled || widget.request.status == RequestStatus.done) ? null : () {
+              onPressed: (_isWaitingForAcceptance || _showFeedback || _isCancelled || isCompleted) ? null : () {
                 _showCancelRequestDialog();
               },
               style: TextButton.styleFrom(
-                backgroundColor: (_isWaitingForAcceptance || _showFeedback || _isCancelled || widget.request.status == RequestStatus.done)
-                  ? Colors.grey[300] 
-                  : const Color(0xFFFEEEEE), // Light red background
+                backgroundColor: (_isWaitingForAcceptance || _showFeedback || _isCancelled || isCompleted)
+                    ? Colors.grey[300]
+                    : const Color(0xFFFEEEEE),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
               child: AppText(
-                _isCancelled ? 'Cancelled' : (widget.request.status == RequestStatus.done ? 'Completed' : 'Cancel'),
+                _isCancelled ? 'Cancelled' : (isCompleted ? 'Completed' : 'Cancel'),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: (_isWaitingForAcceptance || _showFeedback || _isCancelled || widget.request.status == RequestStatus.done)
-                  ? Colors.grey[600] 
-                  : const Color(0xFFF34F4F), // Red text
+                color: (_isWaitingForAcceptance || _showFeedback || _isCancelled || isCompleted)
+                    ? Colors.grey[600]
+                    : const Color(0xFFF34F4F),
               ),
             ),
           ),
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // Request Details Card
-              _buildRequestDetailsCard(),
-              
-              // Chat Messages and Feedback
-              _showFeedback
-                ? Column(
-                    children: [
-                      SizedBox(
+        child: Column(
+          children: [
+            // Fixed header content
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    if (widget.bundleId != null || widget.requestId != null || widget.customerId != null)
+                      _buildIdSection(),
+
+                    _buildRequestDetailsCard(),
+
+                    if (_isLoadingHistory)
+                      Container(
+                        height: 200,
+                        alignment: Alignment.center,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const CircularProgressIndicator(),
+                            const SizedBox(height: 16),
+                            AppText(
+                              'Loading conversation...',
+                              fontSize: 14,
+                              color: AppColors.DarkGray,
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      _showFeedback
+                          ? Column(
+                        children: [
+                          SizedBox(
+                            height: 200,
+                            child: _buildChatMessages(),
+                          ),
+                          _buildFeedbackMessage(),
+                        ],
+                      )
+                          : SizedBox(
                         height: 200,
                         child: _buildChatMessages(),
                       ),
-                      _buildFeedbackMessage(),
+
+                    if (_isWaitingForAcceptance)
+                      _buildWaitingMessage(providerName),
+
+                    if (_isCancelled) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        child: AppText(
+                          _cancellationReason ?? 'The service was no longer required due to unforeseen circumstances.',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.DarkGray,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ] else if (!_isWaitingForAcceptance && !_showFeedback && !_isLoadingHistory) ...[
+                      _buildQuickReplies(),
                     ],
-                  )
-                : SizedBox(
-                    height: 200,
-                    child: _buildChatMessages(),
-                  ),
-              
-              // Pending message
-              if (_isWaitingForAcceptance)
-                _buildWaitingMessage(),
-              
-              // Cancellation messages or Quick Reply Buttons
-              if (_isCancelled) ...[
-                // Cancellation reason text
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  child: AppText(
-                    _cancellationReason ?? 'The service was no longer required due to unforeseen circumstances.',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.DarkGray,
-                    textAlign: TextAlign.center,
-                  ),
+
+                    const SizedBox(height: 100),
+                  ],
                 ),
-                // Cancellation reason bubble
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0F0F0), // Light gray bubble color
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: AppText(
-                    'Cancellation reason provided by you.',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.DarkGray,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                // Cancellation timestamp
-                Padding(
-                  padding: const EdgeInsets.only(top: 4, bottom: 10),
-                  child: AppText(
-                    _cancellationTime != null
-                        ? '${_cancellationTime!.hour}:${_cancellationTime!.minute.toString().padLeft(2, '0')} PM'
-                        : '1:44 PM', // Fallback if time is null
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.DarkGray,
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ] else if (!_isWaitingForAcceptance && !_showFeedback && !_showCompletionRequest) ...[
-                _buildQuickReplies(),
-              ],
-              
-              // Timer countdown (for accepted requests before completion request)
-              if (widget.request.status == RequestStatus.accepted && !_showCompletionRequest && _timerCountdown > 0)
-                _buildCountdownCard(),
-              
-              // Completion Request Card (for accepted requests after timer)
-              if (_showCompletionRequest)
-                _buildCompletionRequestCard(),
-              
-              // Add bottom padding to prevent FAB overlap
-              const SizedBox(height: 80),
-            ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: _isWaitingForAcceptance || _showFeedback || _isCancelled || _isLoadingHistory
+          ? null
+          : FloatingActionButton(
+        onPressed: _navigateToQuickChatPage,
+        backgroundColor: AppColors.primary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        elevation: 4,
+        child: Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Icon(
+              Icons.add,
+              color: Colors.white,
+              size: 24,
+            ),
           ),
         ),
       ),
-      floatingActionButton: null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+
+  Widget _buildMessageInputDialog() {
+    final TextEditingController messageController = TextEditingController();
+
+    return AlertDialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      title: AppText(
+        'New Message',
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: AppColors.Black,
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: messageController,
+            autofocus: true,
+            maxLines: 4,
+            minLines: 1,
+            decoration: InputDecoration(
+              hintText: 'Type your message here...',
+              hintStyle: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 14,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.primary, width: 2),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: AppText(
+            'Cancel',
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppColors.DarkGray,
+          ),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final message = messageController.text.trim();
+            if (message.isNotEmpty) {
+              Navigator.of(context).pop(message);
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          ),
+          child: AppText(
+            'Send',
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIdSection() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (widget.bundleId != null) ...[
+            _buildClickableId(
+              label: 'Bundle ID',
+              id: widget.bundleId!,
+              icon: Icons.inventory,
+              color: Colors.orange,
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (widget.requestId != null) ...[
+            _buildClickableId(
+              label: 'Request ID',
+              id: widget.requestId!,
+              icon: Icons.request_page,
+              color: Colors.blue,
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (widget.customerId != null) ...[
+            _buildClickableId(
+              label: 'Customer ID',
+              id: widget.customerId!,
+              icon: Icons.person,
+              color: Colors.green,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClickableId({
+    required String label,
+    required String id,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 8),
+            AppText(
+              label,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        InkWell(
+          onTap: () => _handleCopyToClipboard(id, label),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: color.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: AppText(
+                    id,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.content_copy,
+                  size: 16,
+                  color: color,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildRequestDetailsCard() {
+    final providerName = widget.request.provider?.fullName ?? widget.request.providerName ?? 'Provider';
+    final providerImage = widget.request.providerImage ?? widget.request.provider?.businessLogo?.url ?? widget.request.imagePath ?? 'assets/images/default_avatar.png';
+    final providerRating = widget.request.providerRating ?? widget.request.provider?.rating ?? 0.0;
+    final providerReviewCount = widget.request.providerReviewCount ?? 0;
+
     return Container(
       margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.all(12),
@@ -340,7 +702,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Service Type and Rate
           Row(
             children: [
               AppText(
@@ -358,20 +719,24 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          
-          // Provider Info
           Row(
             children: [
               CircleAvatar(
                 radius: 16,
-                backgroundImage: AssetImage(widget.request.providerImage),
+                backgroundImage: providerImage.startsWith('http')
+                    ? NetworkImage(providerImage)
+                    : AssetImage(providerImage) as ImageProvider,
+                onBackgroundImageError: (exception, stackTrace) {},
+                child: providerImage.startsWith('http')
+                    ? null
+                    : const Icon(Icons.person, size: 20),
               ),
               const SizedBox(width: 8),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText(
-                    widget.request.providerName,
+                    providerName,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: AppColors.Black,
@@ -382,7 +747,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                       const Icon(Icons.star, color: Colors.amber, size: 14),
                       const SizedBox(width: 2),
                       AppText(
-                        '${widget.request.providerRating} (${widget.request.providerReviewCount} reviews)',
+                        '$providerRating ($providerReviewCount reviews)',
                         fontSize: 12,
                         fontWeight: FontWeight.w400,
                         color: AppColors.DarkGray,
@@ -394,8 +759,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          
-          // Address
           Row(
             children: [
               Expanded(
@@ -424,8 +787,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
             ],
           ),
           const SizedBox(height: 6),
-          
-          // Date and Time
           Row(
             children: [
               AppText(
@@ -436,9 +797,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
               ),
             ],
           ),
-          
-          // Problem Note
-          if (widget.request.problemDescription != null) ...[
+          if (widget.request.problemDescription != null && widget.request.problemDescription!.isNotEmpty) ...[
             const SizedBox(height: 8),
             AppText(
               'Problem Note for ${widget.request.serviceName}',
@@ -460,11 +819,15 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
   }
 
   Widget _buildChatMessages() {
+    final providerImage = widget.request.providerImage ??
+        widget.request.provider?.businessLogo?.url ??
+        widget.request.imagePath ??
+        'assets/images/default_avatar.png';
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
-          // Today separator
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -479,15 +842,21 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          
-          // Messages
           Expanded(
-            child: ListView.builder(
+            child: _messages.isEmpty
+                ? Center(
+              child: AppText(
+                'No messages yet',
+                fontSize: 14,
+                color: AppColors.DarkGray,
+              ),
+            )
+                : ListView.builder(
               controller: _scrollController,
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
-                return _buildMessageBubble(message);
+                return _buildMessageBubble(message, providerImage);
               },
             ),
           ),
@@ -496,18 +865,24 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage message) {
+  Widget _buildMessageBubble(ChatMessage message, String providerImage) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment: message.isFromUser 
-            ? MainAxisAlignment.end 
+        mainAxisAlignment: message.isFromUser
+            ? MainAxisAlignment.end
             : MainAxisAlignment.start,
         children: [
           if (!message.isFromUser) ...[
             CircleAvatar(
               radius: 16,
-              backgroundImage: AssetImage(widget.request.providerImage),
+              backgroundImage: providerImage.startsWith('http')
+                  ? NetworkImage(providerImage)
+                  : AssetImage(providerImage) as ImageProvider,
+              onBackgroundImageError: (exception, stackTrace) {},
+              child: providerImage.startsWith('http')
+                  ? null
+                  : const Icon(Icons.person, size: 16),
             ),
             const SizedBox(width: 8),
           ],
@@ -515,8 +890,8 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: message.isFromUser 
-                    ? AppColors.primary
+                color: message.isFromUser
+                    ? AppColors.primary.withOpacity(message.isPending ? 0.6 : 1.0)
                     : Colors.grey[200],
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -530,11 +905,29 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                     color: message.isFromUser ? Colors.white : AppColors.Black,
                   ),
                   const SizedBox(height: 2),
-                  AppText(
-                    _formatTime(message.timestamp),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w400,
-                    color: message.isFromUser ? Colors.white70 : AppColors.DarkGray,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AppText(
+                        _formatTime(message.timestamp),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w400,
+                        color: message.isFromUser ? Colors.white70 : AppColors.DarkGray,
+                      ),
+                      if (message.isPending) ...[
+                        const SizedBox(width: 4),
+                        SizedBox(
+                          width: 10,
+                          height: 10,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              message.isFromUser ? Colors.white70 : AppColors.DarkGray,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
@@ -554,118 +947,166 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
   }
 
   Widget _buildQuickReplies() {
-    if (_quickMessages.isEmpty) {
+    return Obx(() {
+      if (_quickChatController.isLoading.value) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: const Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      }
+
+      if (_quickChatController.errorMessage.isNotEmpty) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Column(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 40),
+              const SizedBox(height: 8),
+              AppText(
+                _quickChatController.errorMessage.value,
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: Colors.red,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => _loadQuickMessages(),
+                child: AppText(
+                  'Retry',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      if (_quickChatController.quickMessages.isEmpty) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.message_outlined, color: Colors.grey[600], size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: AppText(
+                        'No quick questions available.',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.DarkGray,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.message_outlined, color: Colors.grey[600], size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: AppText(
-                      'No quick questions available at the moment.',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.DarkGray,
-                    ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                AppText(
+                  'Quick Questions',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.DarkGray,
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.refresh,
+                    size: 16,
+                    color: AppColors.primary,
                   ),
-                ],
+                  onPressed: () => _loadQuickMessages(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 120,
+              child: ListView.builder(
+                scrollDirection: Axis.vertical,
+                itemCount: _quickChatController.quickMessages.length,
+                itemBuilder: (context, index) {
+                  final message = _quickChatController.quickMessages[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    child: InkWell(
+                      onTap: () => _sendQuickMessage(message),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF7D6),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFF1C400), width: 1),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            AppText(
+                              message.message,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF8B4513),
+                              maxLines: 2,
+                            ),
+                            if (message.usageCount != null) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.thumb_up,
+                                    size: 10,
+                                    color: Colors.green,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  AppText(
+                                    '${message.usageCount} uses',
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w400,
+                                    color: Colors.green,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
         ),
       );
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header with "See All" button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              AppText(
-                'Quick Questions',
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.DarkGray,
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Scrollable quick message buttons (show all messages)
-          SizedBox(
-            height: 120, // Fixed height for scrollable area
-            child: ListView.builder(
-              scrollDirection: Axis.vertical,
-              itemCount: _quickMessages.length,
-              itemBuilder: (context, index) {
-                final message = _quickMessages[index];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 6),
-                  child: InkWell(
-                    onTap: () => _sendQuickMessage(message),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF7D6),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFF1C400), width: 1),
-                      ),
-                      child: AppText(
-                        message.message,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: const Color(0xFF8B4513),
-                        maxLines: 2,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
+    });
   }
 
-  void _showCancelRequestDialog() {
-    showCancelRequestBottomSheet(
-      context,
-      onNaibrlyNow: () {
-        // Open Naibrly Now sheet with current request info
-        showNaibrlyNowBottomSheet(
-          context,
-          serviceName: widget.request.serviceName,
-          providerName: widget.request.providerName,
-        );
-      },
-      onCancelConfirmed: (reason) {
-        setState(() {
-          _isCancelled = true;
-          _cancellationReason = reason;
-          _cancellationTime = DateTime.now();
-        });
-      },
-    );
-  }
-
-
-  Widget _buildWaitingMessage() {
+  Widget _buildWaitingMessage(String providerName) {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -679,7 +1120,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
       ),
       child: Row(
         children: [
-          // Clock icon
           Container(
             width: 40,
             height: 40,
@@ -694,14 +1134,12 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          
-          // Waiting message
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText(
-                  'Please wait for acceptance from ${widget.request.providerName}',
+                  'Please wait for acceptance from $providerName',
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: AppColors.primary,
@@ -721,7 +1159,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
     );
   }
 
-
   Widget _buildFeedbackMessage() {
     return Container(
       margin: const EdgeInsets.all(16),
@@ -740,21 +1177,16 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Feedback image
           Container(
             width: double.infinity,
             height: 120,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              image: const DecorationImage(
-                image: AssetImage('assets/images/clientFeedback.png'),
-                fit: BoxFit.cover,
-              ),
+              color: Colors.grey[200],
             ),
+            child: const Icon(Icons.feedback, size: 50, color: Colors.grey),
           ),
           const SizedBox(height: 12),
-          
-          // Title
           AppText(
             'Received feedback from the provider',
             fontSize: 16,
@@ -763,10 +1195,8 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          
-          // Feedback message
           AppText(
-            'Thank you for your order! It was a pleasure working on your request. I hope the service met your expectations. Please feel free to reach out if you need anything else!',
+            'Thank you for your order! It was a pleasure working on your request.',
             fontSize: 12,
             fontWeight: FontWeight.w400,
             color: AppColors.DarkGray,
@@ -774,12 +1204,11 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
             maxLines: 3,
           ),
           const SizedBox(height: 12),
-          
-          // Star rating
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(5, (index) => 
-              const Icon(
+            children: List.generate(
+              5,
+                  (index) => const Icon(
                 Icons.star,
                 color: Colors.amber,
                 size: 18,
@@ -787,8 +1216,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          
-          // Done button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -815,21 +1242,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 8),
-          
-          // Report provider link
-          TextButton(
-            onPressed: () {
-              // Handle report provider
-            },
-            child: AppText(
-              'Report Provider',
-              fontSize: 11,
-              fontWeight: FontWeight.w400,
-              color: AppColors.DarkGray,
-              decoration: TextDecoration.underline,
-            ),
-          ),
         ],
       ),
     );
@@ -838,7 +1250,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
   String _formatTime(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
-    
+
     if (difference.inMinutes < 60) {
       return '${difference.inMinutes}m ago';
     } else if (difference.inHours < 24) {
@@ -847,229 +1259,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
       return '${timestamp.hour}:${timestamp.minute.toString().padLeft(2, '0')}';
     }
   }
-
-  Widget _buildCountdownCard() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          AppText(
-            'Task completion request will appear in',
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: AppColors.DarkGray,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          AppText(
-            '$_timerCountdown seconds',
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF0E7A60),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCompletionRequestCard() {
-    return Container(
-      margin: const EdgeInsets.all(12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0x0500CD49), // 2% #00CD4905
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: const Color(0x4D00CD49), // 30% #00CD494D
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Request Amount
-          Row(
-            children: [
-              AppText(
-                'Request Amount:',
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.Black,
-              ),
-              const SizedBox(width: 6),
-              AppText(
-                '\$${widget.request.averagePrice.toInt()}/consult',
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF0E7A60),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 8),
-          
-          // Service details
-          AppText(
-            '${widget.request.serviceName}: \$${widget.request.averagePrice.toInt()}/hr',
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: AppColors.Black,
-          ),
-          
-          const SizedBox(height: 8),
-          
-          // Provider info
-          Row(
-            children: [
-              // Provider image
-              CircleAvatar(
-                radius: 12,
-                backgroundImage: AssetImage(widget.request.providerImage),
-                backgroundColor: Colors.grey.shade300,
-              ),
-              const SizedBox(width: 8),
-              // Provider name and review in a row
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppText(
-                    widget.request.providerName,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.Black,
-                  ),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.star,
-                        color: Colors.amber,
-                        size: 12,
-                      ),
-                      const SizedBox(width: 2),
-                      AppText(
-                        '${widget.request.providerRating} (${widget.request.providerReviewCount} reviews)',
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.DarkGray,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 10),
-          
-          // Description
-          AppText(
-            'Task Accept Request from ${widget.request.providerName}. Accept the request to complete the task. Thank you!',
-            fontSize: 13,
-            fontWeight: FontWeight.w400,
-            color: AppColors.DarkGray,
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Action buttons
-          Row(
-            children: [
-              // Cancel button
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _handleCancelCompletion,
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.red, width: 1),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  child: AppText(
-                    'Cancel',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.red,
-                  ),
-                ),
-              ),
-              
-              const SizedBox(width: 10),
-              
-              // Accept button
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _handleAcceptCompletion,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0E7A60),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    elevation: 0,
-                  ),
-                  child: AppText(
-                    'Accept',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 8),
-          
-          // Time and status
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              AppText(
-                '1:44 PM',
-                fontSize: 11,
-                fontWeight: FontWeight.w400,
-                color: AppColors.DarkGray,
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0F0F0),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: AppText(
-                  'Waiting for accepted',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.Black,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class ChatMessage {
@@ -1077,11 +1266,51 @@ class ChatMessage {
   final bool isFromUser;
   final bool isFromProvider;
   final DateTime timestamp;
+  final String? senderId;
+  final bool isQuickChat;
+  final bool isPending;
 
   ChatMessage({
     required this.text,
     this.isFromUser = false,
     this.isFromProvider = false,
     required this.timestamp,
+    this.senderId,
+    this.isQuickChat = false,
+    this.isPending = false,
   });
+
+  factory ChatMessage.fromSocketData(Map<String, dynamic> data) {
+    return ChatMessage(
+      text: data['content']?.toString() ?? '',
+      isFromUser: data['senderRole'] == 'customer',
+      isFromProvider: data['senderRole'] == 'provider',
+      timestamp: data['timestamp'] != null
+          ? DateTime.parse(data['timestamp'])
+          : DateTime.now(),
+      senderId: data['senderId']?.toString(),
+      isQuickChat: data['isQuickChat'] == true || data['quickChatId'] != null,
+      isPending: false,
+    );
+  }
+
+  ChatMessage copyWith({
+    String? text,
+    bool? isFromUser,
+    bool? isFromProvider,
+    DateTime? timestamp,
+    String? senderId,
+    bool? isQuickChat,
+    bool? isPending,
+  }) {
+    return ChatMessage(
+      text: text ?? this.text,
+      isFromUser: isFromUser ?? this.isFromUser,
+      isFromProvider: isFromProvider ?? this.isFromProvider,
+      timestamp: timestamp ?? this.timestamp,
+      senderId: senderId ?? this.senderId,
+      isQuickChat: isQuickChat ?? this.isQuickChat,
+      isPending: isPending ?? this.isPending,
+    );
+  }
 }

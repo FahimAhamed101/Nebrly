@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:naibrly/provider/controllers/feedback_controller.dart';
 import '../models/provider_profile.dart';
@@ -5,21 +6,17 @@ import '../models/service_request.dart';
 import '../models/analytics.dart';
 import '../models/client_feedback.dart';
 import '../services/home_api_service.dart';
+import '../services/analytics_service.dart';
 
 class ProviderHomeController extends GetxController {
   final Rx<ProviderProfile> providerProfile = ProviderProfile.demo().obs;
   final RxList<ServiceRequest> activeRequests = <ServiceRequest>[].obs;
   final RxList<ServiceRequest> acceptedRequests = <ServiceRequest>[].obs;
   final Rx<Analytics> analytics = Analytics.demo().obs;
-
-  // REMOVED: final RxList<ClientFeedback> clientFeedback = <ClientFeedback>[].obs;
-  // This was causing the duplicate definition
-
+  final RxBool isLoadingAnalytics = false.obs;
+  final RxString analyticsErrorMessage = ''.obs;
   final RxBool isLoading = true.obs;
   final RxString errorMessage = ''.obs;
-
-  // REMOVED: final RxBool hasMoreFeedback = true.obs;
-  // This was causing the "value" error since RxBool doesn't have a .value getter
 
   // Get the FeedbackController instance
   FeedbackController get feedbackController => Get.find<FeedbackController>();
@@ -37,80 +34,184 @@ class ProviderHomeController extends GetxController {
 
   Future<void> loadHomeData() async {
     try {
+      // Set loading state
       isLoading.value = true;
       errorMessage.value = '';
 
-      // Load feedback if not already loading
-      if (feedbackController.feedbackList.isEmpty && !feedbackController.isLoading.value) {
-        feedbackController.loadFeedback();
+      print('🔄 Starting to load all home data...');
+
+      // Load multiple data sources in parallel with proper error handling
+      final results = await Future.wait([
+        _loadServiceRequests().catchError((e) {
+          print('❌ Error in service requests: $e');
+          return Future.value(); // Return empty future to continue
+        }),
+        _loadAnalyticsData().catchError((e) {
+          print('❌ Error in analytics: $e');
+          return Future.value(); // Return empty future to continue
+        }),
+        _loadFeedbackIfNeeded().catchError((e) {
+          print('❌ Error in feedback: $e');
+          return Future.value(); // Return empty future to continue
+        }),
+      ], eagerError: false);
+
+      print('✅ All home data loaded successfully');
+
+      // Check if any critical data failed to load
+      if (activeRequests.isEmpty && acceptedRequests.isEmpty) {
+        print('⚠️ No service requests loaded');
       }
 
-      print('🔄 Starting to load home data from API...');
-
-      final apiService = Get.find<HomeApiService>();
-
-      // Load ALL requests from API
-      final allRequests = await apiService.getServiceRequests();
-
-      print('✅ API returned ${allRequests.length} total requests');
-
-      // Separate pending and accepted requests
-      final pending = allRequests.where((r) => r.status == RequestStatus.pending).toList();
-      final accepted = allRequests.where((r) => r.status == RequestStatus.accepted).toList();
-
-      print('📊 Breakdown:');
-      print('   - Pending (active): ${pending.length}');
-      print('   - Accepted: ${accepted.length}');
-
-      // Update observables
-      activeRequests.assignAll(pending);
-      acceptedRequests.assignAll(accepted);
-
-      print('✅ Data loaded successfully:');
-      print('   - activeRequests.length = ${activeRequests.length}');
-      print('   - acceptedRequests.length = ${acceptedRequests.length}');
-
-      if (pending.isEmpty) {
-        print('ℹ️ No pending requests to display');
-      } else {
-        print('📋 Pending requests:');
-        for (var req in pending) {
-          print('   - ${req.serviceName} for ${req.clientName} on ${req.date}');
-        }
-      }
-
-      if (accepted.isEmpty) {
-        print('ℹ️ No accepted requests to display');
-      } else {
-        print('📋 Accepted requests:');
-        for (var req in accepted) {
-          print('   - ${req.serviceName} for ${req.clientName} on ${req.date}');
-        }
+      if (analytics.value.todayOrders == 0 && analytics.value.monthlyOrders == 0) {
+        print('⚠️ No analytics data loaded (using demo)');
       }
 
     } catch (e, stackTrace) {
-      errorMessage.value = 'Failed to load data: ${e.toString()}';
+      errorMessage.value = 'Failed to load some data: ${e.toString()}';
       print('❌ Error loading home data: $e');
       print('📍 Stack trace: $stackTrace');
 
       // Show error snackbar
       Get.snackbar(
         'Error',
-        'Failed to load requests: ${e.toString()}',
+        'Failed to load some data: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 3),
       );
     } finally {
+      // ALWAYS set loading to false when done
       isLoading.value = false;
-      print('✅ Loading complete. isLoading = false');
+      print('🏁 Loading complete. isLoading = false');
+    }
+  }
+
+  Future<void> _loadServiceRequests() async {
+    try {
+      print('🔄 Loading service requests...');
+
+      final apiService = Get.find<HomeApiService>();
+      final allRequests = await apiService.getServiceRequests();
+
+      print('✅ API returned ${allRequests.length} total requests');
+
+      if (allRequests.isEmpty) {
+        print('⚠️ No service requests found in API response');
+        // Clear existing requests
+        activeRequests.clear();
+        acceptedRequests.clear();
+        return;
+      }
+
+      // Separate pending and accepted requests
+      final pending = allRequests.where((r) => r.status == RequestStatus.pending).toList();
+      final accepted = allRequests.where((r) => r.status == RequestStatus.accepted).toList();
+
+      // Update observables
+      activeRequests.assignAll(pending);
+      acceptedRequests.assignAll(accepted);
+
+      print('📊 Service Requests loaded:');
+      print('   - Active (pending): ${pending.length}');
+      print('   - Accepted: ${accepted.length}');
+
+      // Log sample requests for debugging
+      if (pending.isNotEmpty) {
+        print('📋 Sample pending request: ${pending.first.id} - ${pending.first.serviceName}');
+      }
+      if (accepted.isNotEmpty) {
+        print('📋 Sample accepted request: ${accepted.first.id} - ${accepted.first.serviceName}');
+      }
+
+    } catch (e) {
+      print('❌ Error loading service requests: $e');
+      // Clear lists on error
+      activeRequests.clear();
+      acceptedRequests.clear();
+      rethrow;
+    }
+  }
+
+  // In your ProviderHomeController, update _loadAnalyticsData method:
+  Future<void> _loadAnalyticsData() async {
+    try {
+      isLoadingAnalytics.value = true;
+      analyticsErrorMessage.value = '';
+
+      print('🔄 Loading analytics data...');
+
+      // Get the analytics service
+      AnalyticsService analyticsService;
+      try {
+        analyticsService = Get.find<AnalyticsService>();
+      } catch (e) {
+        // If not registered, create and put it
+        analyticsService = AnalyticsService();
+        Get.put(analyticsService);
+      }
+
+      final apiAnalytics = await analyticsService.getProviderAnalytics();
+
+      // Check if API returned all zeros
+      if (apiAnalytics.todayOrders == 0 &&
+          apiAnalytics.monthlyOrders == 0 &&
+          apiAnalytics.todayEarnings == 0 &&
+          apiAnalytics.monthlyEarnings == 0) {
+
+        print('⚠️ Analytics API returned all zeros - using demo data instead');
+        analytics.value = Analytics.demo();
+
+        // Show info message to user
+        Get.snackbar(
+          'Info',
+          'No analytics data yet. Showing demo data. Start accepting jobs to see your stats!',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 4),
+          backgroundColor: Colors.blue[100],
+          colorText: Colors.blue[800],
+        );
+      } else {
+        // Update analytics observable with real data
+        analytics.value = apiAnalytics;
+
+        print('✅ Analytics loaded successfully');
+        print('📊 Today: ${apiAnalytics.todayOrders} orders, \$${apiAnalytics.todayEarnings}');
+        print('📊 Month: ${apiAnalytics.monthlyOrders} orders, \$${apiAnalytics.monthlyEarnings}');
+      }
+
+    } catch (e) {
+      analyticsErrorMessage.value = 'Failed to load analytics: ${e.toString()}';
+      print('❌ Error loading analytics: $e');
+
+      // Use demo data if API fails
+      analytics.value = Analytics.demo();
+      print('🔄 Using demo analytics data');
+    } finally {
+      isLoadingAnalytics.value = false;
+    }
+  }
+
+  Future<void> _loadFeedbackIfNeeded() async {
+    try {
+      // Load feedback if not already loading
+      if (feedbackController.feedbackList.isEmpty && !feedbackController.isLoading.value) {
+        print('🔄 Loading feedback...');
+        await feedbackController.loadFeedback();
+        print('✅ Feedback loaded successfully');
+      } else {
+        print('ℹ️ Feedback already loaded or loading');
+      }
+    } catch (e) {
+      print('❌ Error loading feedback: $e');
+      // Don't rethrow - feedback is not critical
     }
   }
 
   Future<void> refreshData() async {
-    await Future.wait([
-      loadHomeData(),
-      feedbackController.loadFeedback(),
-    ]);
+    print('🔄 Refreshing all home data...');
+    isLoading.value = true;
+    await loadHomeData();
+    print('✅ All data refreshed successfully');
   }
 
   void toggleFeedbackExpansion(String feedbackId) {

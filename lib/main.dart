@@ -4,12 +4,15 @@ import 'package:naibrly/provider/controllers/ProviderProfileController.dart';
 import 'package:naibrly/provider/controllers/feedback_controller.dart';
 import 'package:naibrly/provider/controllers/home_controller.dart';
 import 'package:naibrly/provider/controllers/verify_information_controller.dart';
+import 'package:naibrly/provider/services/analytics_service.dart';
 import 'package:naibrly/provider/services/api_service.dart';
 import 'package:naibrly/provider/services/feedback_service.dart';
 import 'package:naibrly/provider/services/home_api_service.dart';
 import 'package:naibrly/provider/services/orders_api_service.dart';
 import 'package:naibrly/provider/services/profile_api_service.dart';
 import 'package:naibrly/services/api_service.dart';
+import 'package:naibrly/services/quick_chat_service.dart';
+import 'package:naibrly/services/socket_service.dart';
 import 'package:naibrly/utils/app_contants.dart';
 import 'package:naibrly/utils/tokenService.dart';
 import 'package:naibrly/views/base/bottomNav/auth_wrapper.dart';
@@ -17,7 +20,11 @@ import 'package:naibrly/views/base/bottomNav/bottomNavWrapper.dart';
 import 'package:naibrly/views/screen/welcome/welcome_screen.dart';
 
 import 'AllRoutes/route.dart';
+import 'controller/Customer/request_controller.dart';
+import 'controller/Customer/service_controller.dart';
 import 'controller/networkService/networkService.dart';
+import 'controller/quick_chat_controller.dart';
+import 'controller/socket_controller.dart';
 
 
 void main() async {
@@ -29,7 +36,7 @@ void main() async {
     await service.init();
     return service;
   }, permanent: true);
-
+  Get.lazyPut(() => AnalyticsService(), fenix: true);
   Get.put(NetworkController());
   Get.put(ApiService());
   Get.lazyPut(() => HomeApiService());
@@ -44,6 +51,17 @@ void main() async {
   final token = tokenService.getToken();
   final bool hasToken = token != null && token.isNotEmpty;
   Get.put(MainApiService(), permanent: true);
+  Get.lazyPut(()=>ServiceController());
+  Get.put(QuickChatService());
+  Get.put(QuickChatController());
+  Get.put(SocketService());
+  Get.put(SocketController());
+  await Get.putAsync<RequestController>(() async {
+    final controller = RequestController();
+    // Manually call onInit AFTER token service is ready
+
+    return controller;
+  }, permanent: true);
 
   runApp(MyApp(
     firstScreen: hasToken ? BottomMenuWrappers() : const WelcomeScreen(),
@@ -70,7 +88,7 @@ class MyApp extends StatelessWidget {
         bottom: true,
         child: child ?? const SizedBox.shrink(),
       ),
-        home: AuthWrapper(),
+        home: WelcomeScreen(),
         // initialRoute: AppRoutes.loginScreen,
         getPages: AppRoutes.pages
     );

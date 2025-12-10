@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import '../utils/tokenService.dart';
 
 class MainApiService extends GetxService {  // Changed from MainApiService to ApiService
-  static const String baseUrl = "https://naibrly-backend.onrender.com/api/";
+  static const String baseUrl = "https://naibrly-backend-main-1.onrender.com/api/";
   final TokenService _tokenService = Get.find<TokenService>();
 
   // Headers for API requests

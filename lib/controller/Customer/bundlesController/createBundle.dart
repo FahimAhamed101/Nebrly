@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:naibrly/models/bundle_model.dart';
-
-
 import '../../../provider/services/api_service.dart';
 import '../../../services/api_service.dart';
 
@@ -57,82 +55,134 @@ class CreateBundleController extends GetxController {
   Future<void> joinNaibrlyBundle(BuildContext context, String bundleId) async {
     try {
       loadingBundleId.value = bundleId;
+      print("🚀 Joining bundle with ID: $bundleId");
 
       final response = await _apiService.post(
         'bundles/$bundleId/join',
         {},
       );
 
+      print("📥 Join bundle response: ${response.toString()}");
+
       if (response['success'] == true) {
-        // Refresh the bundles list
+        print("✅ Successfully joined bundle: $bundleId");
+
+        // Refresh the bundles list to get updated participant count
         await getNaibrlyBundle(context);
 
-        Get.snackbar(
-          'Success',
-          'Successfully joined bundle!',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
+        // Use ScaffoldMessenger instead of Get.snackbar
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Successfully joined bundle!'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+        }
       } else {
-        Get.snackbar(
-          'Error',
-          response['message'] ?? 'Failed to join bundle',
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
+        print("❌ Failed to join bundle: ${response['message']}");
+
+        // Check if user is already part of the bundle
+        final message = response['message'] ?? 'Failed to join bundle';
+        final isAlreadyMember = message.toLowerCase().contains('already part');
+
+        // Use ScaffoldMessenger instead of Get.snackbar
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(isAlreadyMember ? 'You are already part of this bundle!' : message),
+              backgroundColor: isAlreadyMember ? Colors.orange : Colors.red,
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+        }
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to join bundle: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      print("💥 Exception joining bundle: $e");
+
+      // Use ScaffoldMessenger instead of Get.snackbar
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString().replaceFirst('ApiException: ', '')}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
     } finally {
       loadingBundleId.value = '';
     }
   }
 
-  Future<void> createBundle(Map<String, dynamic> bundleData) async {
+  Future<bool> createBundle(Map<String, dynamic> bundleData, BuildContext context) async {
     try {
       isLoading.value = true;
       error.value = '';
 
-      final response = await _apiService.post('bundles', bundleData);
+      print("📤 Sending create bundle request...");
+      final response = await _apiService.post('bundles/create', bundleData);
+      print("📥 Create bundle response: ${response.toString()}");
 
       if (response['success'] == true) {
         // Refresh bundles list
-        await getNaibrlyBundle(Get.context!);
+        await getNaibrlyBundle(context);
 
-        Get.snackbar(
-          'Success',
-          'Bundle created successfully!',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-        );
+        // Use ScaffoldMessenger with context
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Bundle created successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+
+        return true; // Success
       } else {
         error.value = response['message'] ?? 'Failed to create bundle';
-        Get.snackbar(
-          'Error',
-          error.value,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-        );
+
+        // Use ScaffoldMessenger with context
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(error.value),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+
+        return false; // Failed
       }
     } catch (e) {
       error.value = 'Error creating bundle: $e';
-      Get.snackbar(
-        'Error',
-        error.value,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      print("❌ Create bundle error: $e");
+
+      // Use ScaffoldMessenger with context
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.value),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+
+      return false; // Failed
     } finally {
       isLoading.value = false;
     }
   }
 
   Future<void> refreshBundles() async {
-    await getNaibrlyBundle(Get.context!);
+    // You need to pass context or use Get.context
+    final context = Get.context;
+    if (context != null) {
+      await getNaibrlyBundle(context);
+    }
   }
 }

@@ -11,13 +11,14 @@ import 'package:naibrly/views/screen/Users/Profile/PrivacyPolicy/privacy_policy_
 import 'package:naibrly/views/screen/Users/Profile/TermsCondition/terms_condition_screen.dart';
 import 'package:naibrly/views/screen/Users/Profile/PaymentHistory/payment_history_screen.dart';
 
-import '../../../../provider/screens/welcome_screen.dart';
+
 import '../../../../utils/app_colors.dart';
 import '../../../../utils/app_icon.dart';
 import '../../../base/AppText/appText.dart';
 import '../../../base/CustomImage/customNetworkImage.dart';
 import '../../../base/Ios_effect/iosTapEffect.dart';
 import 'package:get/get.dart';
+import '../../welcome/welcome_screen.dart';
 import 'Faq_screen/faq_screen.dart';
 import 'base/iconTextRow.dart';
 import 'base/settingItem.dart';
@@ -402,8 +403,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _performLogout() async {
     try {
       // Clear tokens
-      await _tokenService.removeToken();
-      await _tokenService.removeUserId();
+      final TokenService tokenService = Get.find<TokenService>();
+
+      // Clear tokens
+      await tokenService.removeToken();
+      await tokenService.removeUserId();
 
       // Clear any other stored data if needed
       // await _tokenService.clearAll();

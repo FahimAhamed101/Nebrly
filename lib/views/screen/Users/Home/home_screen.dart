@@ -10,7 +10,9 @@ import 'package:naibrly/services/mock_data_service.dart';
 import '../../../../controller/Customer/bundlesController/createBundle.dart';
 import '../../../../controller/Customer/profileController/profileController.dart';
 import '../../../../controller/Customer/service_request_controller.dart';
+import '../../search/search_results_screen.dart';
 import '../Bundles/bundels_screen.dart';
+
 import 'base/popularService.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -28,8 +30,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isLoadingBundles = true;
   int? expandedIndex;
 
-  // Popular search dropdown
+  // Search controllers
   final TextEditingController _popularSearchController = TextEditingController();
+  final TextEditingController _zipCodeController = TextEditingController();
   final GlobalKey _popularSearchFieldKey = GlobalKey();
   final LayerLink _popularSearchLink = LayerLink();
   OverlayEntry? _popularOverlay;
@@ -38,6 +41,10 @@ class _HomeScreenState extends State<HomeScreen> {
     'Home Repairs',
     'Cleaning & Organization',
     'Renovations & Upgrades',
+    'Electrical',
+    'Plumbing',
+    'HVAC',
+    'Appliance Repairs',
   ];
 
   // Controllers
@@ -52,12 +59,17 @@ class _HomeScreenState extends State<HomeScreen> {
     profileController.fetchUserData();
     bundleController.getNaibrlyBundle(context);
     serviceRequestController.fetchServiceRequests();
+
+    // Set default values
+    _popularSearchController.text = "Home Repairs";
+    _zipCodeController.text = "59856";
   }
 
   @override
   void dispose() {
     _closePopularSearches();
     _popularSearchController.dispose();
+    _zipCodeController.dispose();
     super.dispose();
   }
 
@@ -68,6 +80,56 @@ class _HomeScreenState extends State<HomeScreen> {
       bundles = MockDataService.getActiveBundles().take(3).toList();
       isLoadingBundles = false;
     });
+  }
+
+  void _performSearch() {
+    final serviceName = _popularSearchController.text.trim();
+    final zipCode = _zipCodeController.text.trim();
+
+    if (serviceName.isEmpty) {
+      Get.snackbar(
+        'Search Error',
+        'Please select or enter a service name',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade100,
+        colorText: Colors.red.shade900,
+      );
+      return;
+    }
+
+    if (zipCode.isEmpty) {
+      Get.snackbar(
+        'Search Error',
+        'Please enter a zip code',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade100,
+        colorText: Colors.red.shade900,
+      );
+      return;
+    }
+
+    // Validate zip code format (5 digits)
+    if (!RegExp(r'^\d{5}$').hasMatch(zipCode)) {
+      Get.snackbar(
+        'Invalid Zip Code',
+        'Please enter a valid 5-digit zip code',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange.shade100,
+        colorText: Colors.orange.shade900,
+      );
+      return;
+    }
+
+    // Navigate to search results
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SearchResultsScreen(
+          serviceName: serviceName,
+          zipCode: zipCode,
+        ),
+      ),
+    );
   }
 
   void _openPopularSearches() {
@@ -217,7 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
           children: [
-            // Search Bar
+            // Search Bar - NOW FUNCTIONAL
             Container(
               height: 48,
               decoration: BoxDecoration(
@@ -258,11 +320,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   SvgPicture.asset("assets/icons/location.svg"),
                   Expanded(
                     child: TextFormField(
+                      controller: _zipCodeController,
                       keyboardType: TextInputType.number,
+                      maxLength: 5,
                       decoration: InputDecoration(
                         hintText: "59856",
                         border: InputBorder.none,
                         isCollapsed: true,
+                        counterText: "", // Hide character counter
                         hintStyle: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w400,
@@ -272,17 +337,20 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(color: AppColors.textcolor),
                     ),
                   ),
-                  Container(
-                    width: 45,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: const BorderRadius.only(
-                        topRight: Radius.circular(12),
-                        bottomRight: Radius.circular(12),
+                  GestureDetector(
+                    onTap: _performSearch,
+                    child: Container(
+                      width: 45,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: const BorderRadius.only(
+                          topRight: Radius.circular(12),
+                          bottomRight: Radius.circular(12),
+                        ),
                       ),
-                    ),
-                    child: Center(
-                      child: SvgPicture.asset("assets/icons/search-normal.svg"),
+                      child: Center(
+                        child: SvgPicture.asset("assets/icons/search-normal.svg"),
+                      ),
                     ),
                   ),
                 ],
@@ -292,13 +360,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Service Requests Section - Using GetX Obx
             Obx(() {
-              print('🔍 HomeScreen Obx - Building service requests section');
-              print('   isLoading: ${serviceRequestController.isLoading.value}');
-              print('   Total requests: ${serviceRequestController.serviceRequests.length}');
-              print('   Pending requests: ${serviceRequestController.pendingRequests.length}');
-              print('   Error: ${serviceRequestController.error.value}');
-
-              // Show loading indicator
               if (serviceRequestController.isLoading.value) {
                 return Column(
                   children: [
@@ -334,7 +395,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               }
 
-              // Show error if any
               if (serviceRequestController.error.value.isNotEmpty) {
                 return Column(
                   children: [
@@ -384,13 +444,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
               final pendingRequests = serviceRequestController.pendingRequests;
 
-              // No pending requests - hide section
               if (pendingRequests.isEmpty) {
-                print('⚠️ No pending requests to display');
                 return const SizedBox.shrink();
               }
-
-              print('✅ Displaying ${pendingRequests.length} pending request(s)');
 
               return Column(
                 children: [
@@ -414,8 +470,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
-
-                  // ✅ FIXED: Using factory constructor
                   ServiceRequestCard.fromServiceRequest(
                     serviceRequest: pendingRequests.first,
                     onAccept: () async {
@@ -465,7 +519,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Bundle Cards
                   if (bundleController.isLoading.value)
                     const Center(child: CircularProgressIndicator())
                   else if (bundleList.isEmpty)

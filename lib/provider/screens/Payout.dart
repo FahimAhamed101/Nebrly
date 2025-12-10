@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:naibrly/provider/screens/profile/ProviderProfilePage.dart';
 import 'package:naibrly/provider/provider_main.dart';
 
-import 'home&manage/ProfileDashboardScreen.dart';
+
 
 class PayoutInformationScreen extends StatefulWidget {
   const PayoutInformationScreen({super.key});

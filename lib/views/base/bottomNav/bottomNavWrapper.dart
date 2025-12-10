@@ -1,15 +1,19 @@
-// views/base/bottomNav/bottomNavWrapper.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:naibrly/utils/app_colors.dart';
-import 'package:naibrly/views/screen/Users/Bundles/bundels_screen.dart';
+
 import 'package:naibrly/views/screen/Users/Home/home_screen.dart';
 import 'package:naibrly/views/screen/Users/Profile/profile_screen.dart';
-import 'package:naibrly/views/screen/Users/Request/request_screen.dart';
+
 import '../../../controller/BottomController/bottomController.dart';
+import '../../../provider/screens/notifications_screen.dart';
 import '../../../provider/screens/profile/ProviderProfilePage.dart';
 import '../../../provider/views/home/home_screen.dart' as provider_home;
+import '../../../provider/views/orders/orders_screen.dart'; // Add provider orders screen
+ // Add provider notifications screen
 import '../../../utils/tokenService.dart';
+import '../../screen/Users/Bundles/bundels_screen.dart';
+import '../../screen/Users/Requests/requests_screen.dart';
 import 'bottomNavBar.dart';
 
 class BottomMenuWrappers extends StatefulWidget {
@@ -42,7 +46,7 @@ class _BottomMenuWrappersState extends State<BottomMenuWrappers> {
     });
   }
 
-  // Customer pages
+  // Customer pages (same as before)
   final List<Widget> _customerPages = [
     HomeScreen(),
     BundelsScreen(),
@@ -50,11 +54,11 @@ class _BottomMenuWrappersState extends State<BottomMenuWrappers> {
     ProfileScreen(),
   ];
 
-  // Provider pages
+  // Provider pages - Home, Orders, Notifications, Profile
   final List<Widget> _providerPages = [
     provider_home.ProviderHomeScreen(),
-    BundelsScreen(),
-    RequestScreen(),
+    RequestScreen(), // You need to create this screen
+    NotificationsScreen(), // You need to create this screen
     ProviderProfilePage(),
   ];
 
@@ -93,6 +97,7 @@ class _BottomMenuWrappersState extends State<BottomMenuWrappers> {
           child: IosStyleBottomNavigations(
             onTap: controller.selectTab,
             currentIndex: controller.selectedIndex.value,
+            userRole: userRole, // Pass userRole to bottom nav
           ),
         ),
       ),

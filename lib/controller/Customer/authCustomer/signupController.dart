@@ -10,6 +10,8 @@ import 'package:naibrly/utils/app_colors.dart';
 import 'package:http_parser/http_parser.dart' show MediaType;
 import 'package:naibrly/utils/tokenService.dart';
 import 'package:naibrly/views/base/bottomNav/bottomNavWrapper.dart';
+import '../../../provider/provider_main.dart';
+import '../../../provider/screens/profile/ProviderProfilePage.dart';
 import '../../../utils/app_contants.dart';
 import '../../../views/screen/Users/Home/home_screen.dart';
 import '../../networkService/networkService.dart';
@@ -240,7 +242,11 @@ class SignUpController extends GetxController {
         final token = data['data']['token'];
         TokenService().saveToken(token);
 
+        final role = data['data']['user']['role'];
+        await TokenService().saveUserRole(role);
         Navigator.push(context, MaterialPageRoute(builder: (context) => BottomMenuWrappers()),);
+        await TokenService().saveToken(token);
+
         showSuccess(context,"Account created successfully!",);
         isLoading.value = false;
       } else {

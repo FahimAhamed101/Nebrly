@@ -1,6 +1,7 @@
 // Update your AppRoutes to include AuthWrapper
 import 'package:get/get.dart';
 import '../views/base/bottomNav/auth_wrapper.dart';
+import '../views/screen/Users/auth/reset_screen.dart';
 import '../views/screen/auth/login_screen.dart';
 import '../views/screen/auth/sign_up.dart';
 import '../views/screen/welcome/welcome_screen.dart';
@@ -21,6 +22,7 @@ class AppRoutes {
   static String providerProfilePage = "/provider_profile";
   static String authWrapper = "/auth_wrapper";
   static String bottomMenuWrapper = "/bottom_menu_wrapper";
+  static String resetScreen = "/reset-password";
 
   static List<GetPage> pages = [
     GetPage(name: welcomeScreen, page: () => const WelcomeScreen()),
@@ -32,6 +34,9 @@ class AppRoutes {
         page: () => ProviderProfilePage(),
         transition: Transition.noTransition
     ),
+
+
+    GetPage(name: resetScreen, page: () => ResetScreen(), transition: Transition.noTransition),
     GetPage(name: loginScreen, page: () => LoginScreen(), transition: Transition.noTransition),
     GetPage(name: signUpScreen, page: () => SignUp(), transition: Transition.noTransition),
     GetPage(name: providerHomeScreen, page: () => ProviderHomeScreen(), transition: Transition.noTransition),

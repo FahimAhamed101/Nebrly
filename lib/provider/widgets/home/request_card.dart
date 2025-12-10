@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_navigation/src/extension_navigation.dart';
 import '../../models/service_request.dart';
+import '../../screens/service_detail_screen.dart';
 import '../colors.dart';
 import '../button.dart';
 
@@ -23,6 +26,15 @@ class RequestCard extends StatelessWidget {
       return _buildTeamPendingCard(context);
     } else {
       return _buildDetailedPendingCard(context);
+    }
+  }
+
+  // Helper method to get the correct image provider
+  ImageProvider _getImageProvider(String imagePath) {
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return NetworkImage(imagePath);
+    } else {
+      return AssetImage(imagePath);
     }
   }
 
@@ -89,12 +101,18 @@ class RequestCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // Client info
+                // Client info - FIXED: Use helper method
                 Row(
                   children: [
                     CircleAvatar(
                       radius: 20,
-                      backgroundImage: AssetImage(request.clientImage),
+                      backgroundImage: _getImageProvider(request.clientImage),
+                      onBackgroundImageError: (exception, stackTrace) {
+                        print('Error loading image: $exception');
+                      },
+                      child: request.clientImage.startsWith('http')
+                          ? null
+                          : null, // Will show default person icon if image fails
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -187,10 +205,10 @@ class RequestCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0x080E7A60), // 3% opacity of #0E7A60
+        color: const Color(0x080E7A60),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0x4D0E7A60), // 30% opacity of #0E7A60
+          color: const Color(0x4D0E7A60),
           width: 1,
         ),
       ),
@@ -226,12 +244,16 @@ class RequestCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // Client info
+          // Client info - FIXED: Use helper method
           Row(
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundImage: AssetImage(request.clientImage),
+                backgroundImage: _getImageProvider(request.clientImage),
+                backgroundColor: KoreColors.lightGreen,
+                onBackgroundImageError: (exception, stackTrace) {
+                  print('Error loading client image: $exception');
+                },
               ),
               const SizedBox(width: 12),
               Column(
@@ -266,8 +288,6 @@ class RequestCard extends StatelessWidget {
           // Address
           Row(
             children: [
-              //const Icon(Icons.location_on, color: KoreColors.textLight, size: 16),
-              //const SizedBox(width: 4),
               Text(
                 'Address: ',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -310,7 +330,7 @@ class RequestCard extends StatelessWidget {
           // Problem note
           if (request.problemNote != null) ...[
             Text(
-              'Problem Note for Fridge Repair',
+              'Problem Note for ${request.serviceName}',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: KoreColors.textDark,
@@ -357,10 +377,10 @@ class RequestCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0x080E7A60), // 3% opacity of #0E7A60
+        color: const Color(0x080E7A60),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0x4D0E7A60), // 30% opacity of #0E7A60
+          color: const Color(0x4D0E7A60),
           width: 1,
         ),
       ),
@@ -468,136 +488,142 @@ class RequestCard extends StatelessWidget {
   }
 
   Widget _buildAcceptedCard(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: KoreColors.border,
-          width: 1,
+    return GestureDetector(
+      onTap: () {
+        _navigateToServiceDetail(context, request);
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: KoreColors.border,
+            width: 1,
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          // Service image
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.asset(
-                _getServiceImage(request.serviceType),
-                width: 60,
-                height: 60,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  // Fallback to icon if image fails to load
-                  return Container(
-                    color: KoreColors.lightGreen,
-                    child: Icon(
-                      request.serviceType == ServiceType.windowWashing
-                          ? Icons.cleaning_services
-                          : Icons.build,
-                      color: KoreColors.container1,
-                      size: 24,
-                    ),
-                  );
-                },
+        child: Row(
+          children: [
+            // Service image
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  _getServiceImage(request.serviceType),
+                  width: 60,
+                  height: 60,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: KoreColors.lightGreen,
+                      child: Icon(
+                        request.serviceType == ServiceType.windowWashing
+                            ? Icons.cleaning_services
+                            : Icons.build,
+                        color: KoreColors.container1,
+                        size: 24,
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
+            const SizedBox(width: 12),
 
-          // Service details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  request.serviceName,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
+            // Service details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    request.serviceName,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Avg. price: \$${request.pricePerHour.toInt()}/hr',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: KoreColors.textLight,
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Avg. price: \$${request.pricePerHour.toInt()}/hr',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: KoreColors.textLight,
+                          ),
                         ),
                       ),
-                    ),
-                    if (request.isTeamService) ...[
-                      const SizedBox(width: 8),
-                      Image.asset(
-                        'assets/images/people.svg',
-                        width: 14,
-                        height: 14,
-                        color: KoreColors.textLight,
-                        errorBuilder: (context, error, stackTrace) {
-                          // Fallback to icon if SVG fails to load
-                          return const Icon(
-                            Icons.people,
-                            color: KoreColors.textLight,
-                            size: 14,
-                          );
-                        },
-                      ),
+                      if (request.isTeamService) ...[
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.people,
+                          color: KoreColors.textLight,
+                          size: 14,
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Date: ${_formatDateShort(request.date)}, ${request.time}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: KoreColors.textLight,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Text(
+                    'Date: ${_formatDateShort(request.date)}, ${request.time}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: KoreColors.textLight,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          // Accepted tag
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: KoreColors.lightGreen,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: const BoxDecoration(
-                    color: KoreColors.container1,
-                    shape: BoxShape.circle,
+            // Accepted tag
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: KoreColors.lightGreen,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      color: KoreColors.container1,
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'Accepted',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: KoreColors.container1,
+                  const SizedBox(width: 6),
+                  Text(
+                    'Accepted',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: KoreColors.container1,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.chevron_right,
+              color: KoreColors.textLight,
+              size: 20,
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  void _navigateToServiceDetail(BuildContext context, ServiceRequest request) {
+    Get.to(() => ServiceDetailScreen(request: request));
   }
 
   String _formatDate(DateTime date) {

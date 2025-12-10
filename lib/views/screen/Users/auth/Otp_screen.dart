@@ -1,30 +1,42 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
-import 'package:naibrly/controller/verifyController/verifyController.dart';
+
 import 'package:naibrly/utils/app_colors.dart';
 import 'package:naibrly/views/screen/Users/auth/set_new_password.dart';
-import 'package:pin_code_fields/pin_code_fields.dart' hide PinTheme;
 import 'package:pinput/pinput.dart';
 
+import '../../../../controller/verifyController.dart';
 import '../../../base/AppText/appText.dart';
 import '../../../base/Ios_effect/iosTapEffect.dart';
 import '../../../base/primaryButton/primary_button.dart';
+
 class OtpScreen extends StatefulWidget {
-  OtpScreen({super.key});
+  final String email; // Add email parameter
+
+  const OtpScreen({super.key, required this.email}); // Require email
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
 }
 
 class _OtpScreenState extends State<OtpScreen> {
-  VerifyController controller = Get.put(VerifyController());
+  final VerifyController controller = Get.put(VerifyController());
+  final TextEditingController pincodeController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
-    controller.StartTimer();
+    controller.startTimer();
+    // Optionally, auto-focus the OTP field
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FocusScope.of(context).requestFocus(FocusNode());
+    });
+  }
+
+  @override
+  void dispose() {
+    controller.disposeTimer();
+    super.dispose();
   }
 
   @override
@@ -35,63 +47,83 @@ class _OtpScreenState extends State<OtpScreen> {
         backgroundColor: AppColors.White,
         elevation: 0,
         automaticallyImplyLeading: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Get.back(),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 18.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Align(
-              alignment: Alignment.topLeft,
-              child: AppText(
-                "Authentication Code",
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-                color: AppColors.black,
-              ),
+            const SizedBox(height: 20),
+            AppText(
+              "Authentication Code",
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+              color: AppColors.black,
             ),
             const SizedBox(height: 10),
             RichText(
-                text: TextSpan(
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.black87,
-                    fontSize: 14,
-                  ),
-                  children: [
-                    TextSpan(text: "Enter 5-digit code we just texted to your Email",style: TextStyle(fontWeight: FontWeight.w400,color: AppColors.black)),
-                    TextSpan(
-                      text: " jhon@gmail.com",
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w500,
-                        decoration: TextDecoration.none,
-                      ),
-                    ),
-
-                  ],
+              text: TextSpan(
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.black87,
                 ),
+                children: [
+                  const TextSpan(
+                    text: "Enter 5-digit code we just texted to your Email ",
+                  ),
+                  TextSpan(
+                    text: widget.email, // Use the actual email
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
+            ),
             const SizedBox(height: 40),
-            PincodeWidget(context),
+            _buildPinCodeWidget(),
             const SizedBox(height: 16),
-            timerAndDonTget(),
+            _buildTimerAndResend(),
             const SizedBox(height: 40),
-            PrimaryButton(text: "Confirm", onTap: (){
-
-              Navigator.push(context, MaterialPageRoute(builder: (builder)=> SetNewPassword()));
-
+            Obx(() {
+              return PrimaryButton(
+                text: controller.isVerifying.value ? "Verifying..." : "Confirm",
+                onTap: () {
+                  _verifyOtp();
+                },
+              );
             }),
-
           ],
         ),
       ),
     );
   }
 
-  final TextEditingController pincode = TextEditingController();
-  Widget PincodeWidget(BuildContext context){
+  Widget _buildPinCodeWidget() {
+    final defaultPinTheme = PinTheme(
+      width: 60,
+      height: 60,
+      textStyle: const TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        color: Colors.black,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(14),
+      ),
+    );
+
     return Pinput(
-      controller: pincode,
-      length: 4,
+      controller: pincodeController,
+      length: 4, // Changed to 5 digits as mentioned in text
       defaultPinTheme: defaultPinTheme,
       focusedPinTheme: defaultPinTheme.copyWith(
         decoration: defaultPinTheme.decoration!.copyWith(
@@ -113,69 +145,84 @@ class _OtpScreenState extends State<OtpScreen> {
       ),
       showCursor: true,
       onCompleted: (pin) {
-        print("✅ Entered PIN: $pin");
+        _verifyOtp();
       },
     );
-
   }
 
-  final defaultPinTheme = PinTheme(
-    width: 60,
-    height: 60,
-    textStyle: const TextStyle(
-      fontSize: 22,
-      fontWeight: FontWeight.w600,
-      color: Colors.black,
-    ),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-      borderRadius: BorderRadius.circular(14), // ✅ Rounded corners
-    ),
-  );
-  Widget timerAndDonTget(){
-  return Row(
+  Widget _buildTimerAndResend() {
+    return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
         AppText(
+          "Didn't get the code?",
           fontSize: 15,
-          "Didn’t get the code?",
-          textAlign: TextAlign.center,
           fontWeight: FontWeight.w400,
-          color:AppColors.Black,
+          color: AppColors.black,
         ),
-        SizedBox(width: 4,),
-        Obx(()=>AppText(
+        const SizedBox(width: 4),
+        Obx(() => AppText(
+          " ${controller.start.value} sec",
           fontSize: 15,
-          "${controller.start.value} sec",
-          textAlign: TextAlign.center,
           fontWeight: FontWeight.w400,
           color: AppColors.primary,
-        ),),
-        Spacer(),
-        IntrinsicWidth(
-          child: Column(
-            children: [
-              IosTapEffect(
-                onTap:()async{
-                 // await controller.resendOtp(widget.email);
-                },
-                child: AppText(
-                  "Resend",
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color:AppColors.primary,
-                  textAlign: TextAlign.center,
-                ),
+        )),
+        const Spacer(),
+        Obx(() {
+          if (controller.start.value == 0) {
+            return IntrinsicWidth(
+              child: Column(
+                children: [
+                  IosTapEffect(
+                    onTap: () {
+                      controller.resendOtp(widget.email);
+                      controller.startTimer();
+                    },
+                    child: AppText(
+                      "Resend",
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  Container(
+                    height: 1.2,
+                    color: AppColors.primary,
+                  ),
+                ],
               ),
-              Container(
-                height: 1.2,
-                color: AppColors.primary,
-              )
-            ],
-          ),
-        ),
+            );
+          }
+          return const SizedBox.shrink();
+        }),
       ],
     );
+  }
+
+  void _verifyOtp() {
+    final otp = pincodeController.text.trim();
+
+    if (otp.isEmpty || otp.length != 5) {
+      Get.snackbar(
+        'Error',
+        'Please enter a valid 5-digit OTP',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    // Call your OTP verification API here
+    // Example:
+    // controller.verifyOtp(
+    //   email: widget.email,
+    //   otp: otp,
+    //   onSuccess: () {
+    //     Get.to(() => SetNewPassword(email: widget.email));
+    //   },
+    // );
+
+    // For now, navigate directly to SetNewPassword
+    Get.to(() => SetNewPassword(email: widget.email));
   }
 }

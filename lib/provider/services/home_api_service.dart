@@ -78,83 +78,87 @@ class HomeApiService extends GetxService {
 
     final responseData = data['data'];
 
-    // Parse regular service requests - ALL STATUSES
-    final serviceRequestsRaw = responseData['serviceRequests'];
-    List<dynamic>? serviceRequests;
+    // Parse service requests
+    if (responseData['serviceRequests'] != null) {
+      final serviceRequestsData = responseData['serviceRequests'];
 
-    if (serviceRequestsRaw is List) {
-      serviceRequests = serviceRequestsRaw;
-    } else if (serviceRequestsRaw is int && serviceRequestsRaw == 0) {
-      serviceRequests = [];
-      print('ℹ️ serviceRequests is 0 (number), treating as empty array');
-    } else {
-      serviceRequests = null;
-    }
+      if (serviceRequestsData['items'] is List) {
+        final List<dynamic> serviceRequests = serviceRequestsData['items'];
+        print('📋 Total Service Requests in response: ${serviceRequests.length}');
 
-    print('📋 Total Service Requests in response: ${serviceRequests?.length ?? 0}');
+        if (serviceRequests.isNotEmpty) {
+          print('📊 Request Statuses:');
+          for (var request in serviceRequests) {
+            print('   - ${request['_id']}: ${request['status']}');
+          }
 
-    if (serviceRequests != null && serviceRequests.isNotEmpty) {
-      // Log all statuses
-      print('📊 Request Statuses:');
-      for (var request in serviceRequests) {
-        print('   - ${request['_id']}: ${request['status']}');
-      }
-
-      // Parse ALL requests regardless of status
-      for (var request in serviceRequests) {
-        print('🔍 Processing service request: ${request['_id']} (status: ${request['status']})');
-
-        try {
-          final serviceRequest = _parseServiceRequest(request);
-          allRequests.add(serviceRequest);
-          print('✅ Added request: ${serviceRequest.id} with status: ${serviceRequest.status}');
-        } catch (e) {
-          print('❌ Error parsing service request ${request['_id']}: $e');
+          for (var request in serviceRequests) {
+            try {
+              print('🔍 Processing service request: ${request['_id']} (status: ${request['status']})');
+              final serviceRequest = _parseServiceRequest(request);
+              allRequests.add(serviceRequest);
+              print('✅ Added request: ${serviceRequest.id} with status: ${serviceRequest.status}');
+            } catch (e, stackTrace) {
+              print('❌ Error parsing service request ${request['_id']}: $e');
+              print('📍 Stack trace: $stackTrace');
+              // Don't rethrow - continue with other requests
+            }
+          }
+        } else {
+          print('ℹ️ No service requests found in items array');
         }
+      } else {
+        print('⚠️ serviceRequests.items is not an array: ${serviceRequestsData['items']}');
       }
     } else {
-      print('ℹ️ No service requests found in response');
+      print('ℹ️ No serviceRequests field in response');
     }
 
-    // Parse bundle requests - ALL STATUSES
-    final bundlesRaw = responseData['bundles'];
-    List<dynamic>? bundleRequests;
+    // Parse bundle requests
+    if (responseData['bundles'] != null) {
+      final bundlesData = responseData['bundles'];
 
-    if (bundlesRaw is Map<String, dynamic>) {
-      bundleRequests = bundlesRaw['requests'] as List<dynamic>?;
-    } else if (bundlesRaw is int && bundlesRaw == 0) {
-      bundleRequests = [];
-      print('ℹ️ bundles is 0 (number), treating as empty array');
-    } else {
-      bundleRequests = null;
-    }
+      if (bundlesData['items'] is List) {
+        final List<dynamic> bundleRequests = bundlesData['items'];
+        print('📦 Total Bundle Requests in response: ${bundleRequests.length}');
 
-    print('📦 Total Bundle Requests in response: ${bundleRequests?.length ?? 0}');
+        if (bundleRequests.isNotEmpty) {
+          print('📊 Bundle Statuses:');
+          for (var bundle in bundleRequests) {
+            print('   - ${bundle['_id']}: ${bundle['status']}');
+          }
 
-    if (bundleRequests != null && bundleRequests.isNotEmpty) {
-      // Log all statuses
-      print('📊 Bundle Statuses:');
-      for (var bundle in bundleRequests) {
-        print('   - ${bundle['_id']}: ${bundle['status']}');
-      }
-
-      // Parse ALL bundles regardless of status
-      for (var bundle in bundleRequests) {
-        print('🔍 Processing bundle request: ${bundle['_id']} (status: ${bundle['status']})');
-
-        try {
-          final bundleRequest = _parseBundleRequest(bundle);
-          allRequests.add(bundleRequest);
-          print('✅ Added bundle: ${bundleRequest.id} with status: ${bundleRequest.status}');
-        } catch (e) {
-          print('❌ Error parsing bundle request ${bundle['_id']}: $e');
+          for (var bundle in bundleRequests) {
+            try {
+              print('🔍 Processing bundle request: ${bundle['_id']} (status: ${bundle['status']})');
+              final bundleRequest = _parseBundleRequest(bundle);
+              allRequests.add(bundleRequest);
+              print('✅ Added bundle: ${bundleRequest.id} with status: ${bundleRequest.status}');
+            } catch (e, stackTrace) {
+              print('❌ Error parsing bundle request ${bundle['_id']}: $e');
+              print('📍 Stack trace: $stackTrace');
+              // Don't rethrow - continue with other bundles
+            }
+          }
+        } else {
+          print('ℹ️ No bundle requests found in items array');
         }
+      } else {
+        print('⚠️ bundles.items is not an array: ${bundlesData['items']}');
       }
     } else {
-      print('ℹ️ No bundle requests found in response');
+      print('ℹ️ No bundles field in response');
     }
 
     print('🎯 Total requests parsed: ${allRequests.length}');
+
+    if (allRequests.isNotEmpty) {
+      print('📋 Parsed Requests Summary:');
+      for (var request in allRequests) {
+        print('   - ${request.id}: ${request.serviceName} (${request.status}) - ${request.clientName}');
+      }
+    }
+
     return allRequests;
   }
 
@@ -162,65 +166,154 @@ class HomeApiService extends GetxService {
     try {
       print('🔧 Parsing service request: ${request['_id']}');
 
-      // Parse service type
-      final ServiceType serviceType = _parseServiceType(request['serviceType']);
+      // Parse service type - FIXED: Handle null safely
+      final serviceTypeStr = request['serviceType'];
+      final ServiceType serviceType = serviceTypeStr != null
+          ? _parseServiceType(serviceTypeStr.toString())
+          : ServiceType.electrical;
 
       // Parse date
-      final DateTime scheduledDate = DateTime.parse(request['scheduledDate']);
+      DateTime scheduledDate;
+      try {
+        if (request['scheduledDate'] != null) {
+          scheduledDate = DateTime.parse(request['scheduledDate'].toString());
+        } else {
+          scheduledDate = DateTime.now();
+          print('⚠️ No scheduledDate, using current date');
+        }
+      } catch (e) {
+        scheduledDate = DateTime.now();
+        print('⚠️ Error parsing scheduledDate, using current date: $e');
+      }
 
-      // Parse customer info
+      // Parse customer info - FIXED: Better null handling
       final customer = request['customer'];
       if (customer == null) {
         print('❌ Customer data is null');
         throw Exception('Customer data is null');
       }
 
-      final address = customer['address'];
-      if (address == null) {
-        print('❌ Address data is null');
-        throw Exception('Address data is null');
+      // Ensure customer is a Map
+      if (customer is! Map<String, dynamic>) {
+        print('❌ Customer data is not a Map: ${customer.runtimeType}');
+        throw Exception('Customer data is not a Map');
       }
 
-      // Build address string - handle optional aptSuite
-      String addressStr = '${address['street']}, ${address['city']}, ${address['state']} ${address['zipCode']}';
-      if (address['aptSuite'] != null && address['aptSuite'].toString().isNotEmpty) {
-        addressStr = '${address['aptSuite']}, $addressStr';
+      // Build address string - FIXED: Better null checks
+      String addressStr = 'Unknown Address';
+      try {
+        final address = customer['address'];
+        if (address != null && address is Map<String, dynamic>) {
+          final street = address['street']?.toString() ?? '';
+          final city = address['city']?.toString() ?? '';
+          final state = address['state']?.toString() ?? '';
+          final zipCode = address['zipCode']?.toString() ?? '';
+          final aptSuite = address['aptSuite']?.toString();
+
+          if (aptSuite != null && aptSuite.isNotEmpty) {
+            addressStr = '$aptSuite, $street, $city, $state $zipCode';
+          } else {
+            addressStr = '$street, $city, $state $zipCode';
+          }
+        } else {
+          // Try locationInfo as fallback
+          final locationInfo = request['locationInfo'];
+          if (locationInfo != null && locationInfo is Map<String, dynamic>) {
+            final customerAddress = locationInfo['customerAddress'];
+            if (customerAddress != null && customerAddress is Map<String, dynamic>) {
+              final street = customerAddress['street']?.toString() ?? '';
+              final city = customerAddress['city']?.toString() ?? '';
+              final state = customerAddress['state']?.toString() ?? '';
+              final zipCode = customerAddress['zipCode']?.toString() ?? '';
+              final aptSuite = customerAddress['aptSuite']?.toString();
+
+              if (aptSuite != null && aptSuite.isNotEmpty) {
+                addressStr = '$aptSuite, $street, $city, $state $zipCode';
+              } else {
+                addressStr = '$street, $city, $state $zipCode';
+              }
+            }
+          }
+        }
+      } catch (e) {
+        print('⚠️ Error parsing address: $e');
+        addressStr = 'Unknown Address';
       }
 
-      // Get profile image URL or use default
-      final profileImageUrl = customer['profileImage']?['url'] ?? 'assets/images/default_avatar.png';
+      // Get profile image URL - FIXED: Better null handling
+      String profileImageUrl = 'assets/images/default_avatar.png';
+      try {
+        final profileImage = customer['profileImage'];
+        if (profileImage != null && profileImage is Map<String, dynamic>) {
+          profileImageUrl = profileImage['url']?.toString() ?? 'assets/images/default_avatar.png';
+        }
+      } catch (e) {
+        print('⚠️ Error parsing profile image: $e');
+      }
 
-      // Get time - use a default time if scheduledDate only has date
+      // Get time
       String timeStr = _formatTimeFromDate(scheduledDate);
       if (timeStr == '00:00') {
-        timeStr = '09:00'; // Default to 9 AM if no time is specified
+        timeStr = '09:00';
       }
 
-      // Parse status from API
-      final RequestStatus status = _parseRequestStatus(request['status']);
+      // Parse status
+      final statusStr = request['status'];
+      final RequestStatus status = statusStr != null
+          ? _parseRequestStatus(statusStr.toString())
+          : RequestStatus.pending;
+
+      // Get client name - FIXED: Better null handling
+      final firstName = customer['firstName']?.toString() ?? '';
+      final lastName = customer['lastName']?.toString() ?? '';
+      final clientName = firstName.isNotEmpty || lastName.isNotEmpty
+          ? '$firstName $lastName'.trim()
+          : 'Unknown Customer';
+
+      // Get problem note
+      final problemNote = request['problem']?.toString() ??
+          request['note']?.toString() ??
+          'No description provided';
+
+      // Parse price - FIXED: Better number parsing
+      double pricePerHour = 50.0;
+      try {
+        final price = request['price'];
+        if (price != null) {
+          pricePerHour = price is num ? price.toDouble() : double.parse(price.toString());
+        }
+      } catch (e) {
+        print('⚠️ Error parsing price: $e');
+      }
 
       final serviceRequest = ServiceRequest(
-        id: request['_id'],
+        id: request['_id']?.toString() ?? 'unknown_id',
         serviceType: serviceType,
         serviceName: _getServiceName(serviceType),
-        pricePerHour: (request['price'] ?? 0.0).toDouble(),
-        clientName: '${customer['firstName']} ${customer['lastName']}',
+        pricePerHour: pricePerHour,
+        clientName: clientName,
         clientImage: profileImageUrl,
-        clientRating: 4.5, // Default rating since API doesn't provide
-        clientReviewCount: 10, // Default count since API doesn't provide
+        clientRating: 4.5,
+        clientReviewCount: 10,
         address: addressStr,
         date: scheduledDate,
         time: timeStr,
-        problemNote: request['problem'] ?? request['note'],
-        status: status, // Use the parsed status from API
+        problemNote: problemNote,
+        status: status,
         isTeamService: false,
       );
 
-      print('✅ Successfully parsed service request: ${serviceRequest.id} (status: ${serviceRequest.status})');
+      print('✅ Successfully parsed service request:');
+      print('   - ID: ${serviceRequest.id}');
+      print('   - Service: ${serviceRequest.serviceName}');
+      print('   - Status: ${serviceRequest.status}');
+      print('   - Client: ${serviceRequest.clientName}');
+
       return serviceRequest;
     } catch (e, stackTrace) {
       print('❌ Error in _parseServiceRequest: $e');
       print('📍 Stack trace: $stackTrace');
+      print('📍 Request data: ${json.encode(request)}');
       rethrow;
     }
   }
@@ -229,61 +322,220 @@ class HomeApiService extends GetxService {
     try {
       print('🔧 Parsing bundle request: ${bundle['_id']}');
 
-      // Parse service type from category or first service
-      final ServiceType serviceType = _parseServiceTypeFromCategory(bundle['category'] ?? 'Cleaning');
+      // Parse service type from category
+      final categoryStr = bundle['category']?.toString() ?? 'Interior';
+      final ServiceType serviceType = _parseServiceTypeFromCategory(categoryStr);
 
       // Parse date
-      final DateTime serviceDate = DateTime.parse(bundle['serviceDate']);
-
-      // Parse participant info
-      final participant = bundle['participant'];
-      if (participant == null) {
-        throw Exception('Participant data is null');
+      DateTime serviceDate;
+      try {
+        if (bundle['serviceDate'] != null) {
+          serviceDate = DateTime.parse(bundle['serviceDate'].toString());
+        } else {
+          serviceDate = DateTime.now();
+          print('⚠️ No serviceDate, using current date');
+        }
+      } catch (e) {
+        serviceDate = DateTime.now();
+        print('⚠️ Error parsing serviceDate, using current date: $e');
       }
 
-      final address = participant['address'];
-      if (address == null) {
-        throw Exception('Address data is null');
+      // Helper function to safely extract customer data
+      Map<String, dynamic>? _extractCustomerData(dynamic source) {
+        if (source == null) return null;
+        if (source is Map<String, dynamic>) {
+          // If it has a 'customer' field, use that
+          if (source.containsKey('customer') && source['customer'] is Map<String, dynamic>) {
+            return source['customer'] as Map<String, dynamic>;
+          }
+          // Otherwise, if it looks like customer data itself, return it
+          if (source.containsKey('firstName') || source.containsKey('email')) {
+            return source;
+          }
+        }
+        return null;
+      }
+
+      // Helper function to safely extract address
+      Map<String, dynamic>? _extractAddress(dynamic source) {
+        if (source == null) return null;
+        if (source is Map<String, dynamic>) {
+          // Direct address field
+          if (source.containsKey('address') && source['address'] is Map<String, dynamic>) {
+            return source['address'] as Map<String, dynamic>;
+          }
+          // If source itself looks like an address
+          if (source.containsKey('street') || source.containsKey('city')) {
+            return source;
+          }
+        }
+        return null;
+      }
+
+      // Parse participant info - FIXED: Use helper functions
+      Map<String, dynamic>? customerData;
+      Map<String, dynamic>? addressData;
+
+      try {
+        // Try multiple sources for customer data
+        final sources = [
+          bundle['participantCustomer'],
+          bundle['customer'],
+          bundle['creator'],
+          bundle['participant']?['customer'],
+          bundle['participant'],
+        ];
+
+        for (var source in sources) {
+          customerData = _extractCustomerData(source);
+          if (customerData != null) {
+            print('✅ Found customer data from source');
+            break;
+          }
+        }
+
+        // Try multiple sources for address
+        final addressSources = [
+          bundle['participantAddress'],
+          bundle['address'],
+          customerData,
+          bundle['creator'],
+        ];
+
+        for (var source in addressSources) {
+          addressData = _extractAddress(source);
+          if (addressData != null) {
+            print('✅ Found address data from source');
+            break;
+          }
+        }
+      } catch (e) {
+        print('⚠️ Error extracting participant data: $e');
+      }
+
+      // Use default data if not found
+      if (customerData == null) {
+        print('⚠️ Using default customer data');
+        customerData = {
+          'firstName': 'Unknown',
+          'lastName': 'Customer',
+          'profileImage': {'url': 'assets/images/default_avatar.png'},
+        };
+      }
+
+      if (addressData == null) {
+        print('⚠️ Using default address data');
+        addressData = {
+          'street': 'Unknown',
+          'city': 'Unknown',
+          'state': 'Unknown',
+          'zipCode': '00000'
+        };
       }
 
       // Build address string
-      final addressStr = '${address['street']}, ${address['city']}, ${address['state']} ${address['zipCode']}';
+      String addressStr = 'Unknown Address';
+      try {
+        final street = addressData['street']?.toString() ?? '';
+        final city = addressData['city']?.toString() ?? '';
+        final state = addressData['state']?.toString() ?? '';
+        final zipCode = addressData['zipCode']?.toString() ?? '';
+        final aptSuite = addressData['aptSuite']?.toString();
 
-      // Get profile image URL or use default
-      final profileImageUrl = participant['profileImage']?['url'] ?? 'assets/images/default_avatar.png';
+        if (aptSuite != null && aptSuite.isNotEmpty) {
+          addressStr = '$aptSuite, $street, $city, $state $zipCode';
+        } else {
+          addressStr = '$street, $city, $state $zipCode';
+        }
+
+        // Clean up any double spaces
+        addressStr = addressStr.replaceAll(RegExp(r'\s+'), ' ').trim();
+      } catch (e) {
+        print('⚠️ Error building address string: $e');
+      }
+
+      // Get profile image
+      String profileImageUrl = 'assets/images/default_avatar.png';
+      try {
+        final profileImage = customerData['profileImage'];
+        if (profileImage != null && profileImage is Map<String, dynamic>) {
+          profileImageUrl = profileImage['url']?.toString() ?? 'assets/images/default_avatar.png';
+        } else if (profileImage is String) {
+          profileImageUrl = profileImage;
+        }
+      } catch (e) {
+        print('⚠️ Error parsing profile image: $e');
+      }
 
       // Create team members list
       final List<String> teamMembers = [];
-      final participantsCount = bundle['participantsCount'] ?? 1;
-      if (participantsCount > 1) {
-        for (int i = 1; i <= participantsCount; i++) {
-          teamMembers.add('Team Member $i');
+      int participantsCount = 1;
+      try {
+        if (bundle['currentParticipants'] != null) {
+          participantsCount = int.parse(bundle['currentParticipants'].toString());
+        } else if (bundle['participants'] is List) {
+          participantsCount = (bundle['participants'] as List).length;
         }
+
+        if (participantsCount > 1) {
+          for (int i = 1; i <= participantsCount; i++) {
+            teamMembers.add('Team Member $i');
+          }
+        }
+      } catch (e) {
+        print('⚠️ Error parsing participants count: $e');
       }
 
-      // Parse status from API
-      final RequestStatus status = _parseRequestStatus(bundle['status']);
+      // Parse status
+      final statusStr = bundle['status'];
+      final RequestStatus status = statusStr != null
+          ? _parseRequestStatus(statusStr.toString())
+          : RequestStatus.pending;
 
-      return ServiceRequest(
-        id: bundle['_id'],
+      // Get client name
+      final firstName = customerData['firstName']?.toString() ?? '';
+      final lastName = customerData['lastName']?.toString() ?? '';
+      final clientName = firstName.isNotEmpty || lastName.isNotEmpty
+          ? '$firstName $lastName'.trim()
+          : 'Unknown Customer';
+
+      // Get time
+      final timeStr = bundle['serviceTimeStart']?.toString() ?? '09:00';
+
+      final bundleRequest = ServiceRequest(
+        id: bundle['_id']?.toString() ?? 'unknown_bundle_id',
         serviceType: serviceType,
-        serviceName: bundle['title'] ?? 'Bundle Service',
+        serviceName: bundle['title']?.toString() ?? 'Bundle Service',
         pricePerHour: _calculateBundleHourlyRate(bundle),
-        clientName: '${participant['firstName']} ${participant['lastName']}',
+        clientName: clientName,
         clientImage: profileImageUrl,
-        clientRating: 4.5, // Default rating
-        clientReviewCount: 10, // Default count
+        clientRating: 4.5,
+        clientReviewCount: 10,
         address: addressStr,
         date: serviceDate,
-        time: bundle['serviceTimeStart'] ?? '09:00',
-        problemNote: bundle['categoryTypeName'],
-        status: status, // Use the parsed status from API
+        time: timeStr,
+        problemNote: bundle['categoryTypeName']?.toString() ??
+            bundle['description']?.toString() ??
+            'Bundle Service',
+        status: status,
         isTeamService: participantsCount > 1,
         teamMembers: teamMembers.isNotEmpty ? teamMembers : null,
-        bundleType: '$participantsCount-Person Bundle',
+        bundleType: participantsCount > 1
+            ? '$participantsCount-Person Bundle'
+            : null,
       );
-    } catch (e) {
+
+      print('✅ Successfully parsed bundle request:');
+      print('   - ID: ${bundleRequest.id}');
+      print('   - Title: ${bundleRequest.serviceName}');
+      print('   - Status: ${bundleRequest.status}');
+      print('   - Participants: $participantsCount');
+
+      return bundleRequest;
+    } catch (e, stackTrace) {
       print('❌ Error in _parseBundleRequest: $e');
+      print('📍 Stack trace: $stackTrace');
+      print('📍 Bundle data: ${json.encode(bundle)}');
       rethrow;
     }
   }
@@ -295,11 +547,14 @@ class HomeApiService extends GetxService {
       case 'plumbing':
         return ServiceType.plumbing;
       case 'cleaning':
+      case 'carpet cleaning':
         return ServiceType.cleaning;
       case 'appliance':
         return ServiceType.applianceRepairs;
       case 'window':
         return ServiceType.windowWashing;
+      case 'hvac':
+        return ServiceType.electrical; // Map HVAC to electrical for now
       default:
         print('⚠️ Unknown service type: $type, defaulting to electrical');
         return ServiceType.electrical;
@@ -314,6 +569,8 @@ class HomeApiService extends GetxService {
         return ServiceType.electrical;
       case 'plumbing':
         return ServiceType.plumbing;
+      case 'more services':
+        return ServiceType.applianceRepairs;
       default:
         print('⚠️ Unknown category: $category, defaulting to cleaning');
         return ServiceType.cleaning;
@@ -357,18 +614,29 @@ class HomeApiService extends GetxService {
 
   double _calculateBundleHourlyRate(Map<String, dynamic> bundle) {
     try {
-      final services = bundle['services'] as List<dynamic>?;
-      if (services != null && services.isNotEmpty) {
+      final services = bundle['services'];
+      if (services != null && services is List && services.isNotEmpty) {
         double totalRate = 0;
+        int count = 0;
         for (var service in services) {
-          totalRate += (service['hourlyRate'] ?? 0).toDouble();
+          if (service is Map<String, dynamic>) {
+            final hourlyRate = service['hourlyRate'];
+            if (hourlyRate != null) {
+              totalRate += hourlyRate is num
+                  ? hourlyRate.toDouble()
+                  : double.parse(hourlyRate.toString());
+              count++;
+            }
+          }
         }
-        return totalRate / services.length;
+        if (count > 0) {
+          return totalRate / count;
+        }
       }
     } catch (e) {
       print('❌ Error calculating bundle rate: $e');
     }
-    return 50.0; // Default rate
+    return 50.0;
   }
 
   Future<void> acceptRequest(String requestId) async {

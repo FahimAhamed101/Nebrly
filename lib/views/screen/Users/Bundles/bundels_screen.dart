@@ -15,15 +15,11 @@ class BundelsScreen extends StatefulWidget {
   @override
   State<BundelsScreen> createState() => _BundelsScreenState();
 }
-
 class _BundelsScreenState extends State<BundelsScreen> {
   List<Map<String, dynamic>> categories = [];
   String selectedCategory = 'All';
-
-  // Filter dropdowns
   String selectedFilter1 = 'Interior';
   String selectedFilter2 = 'Home...';
-
   final CreateBundleController controller = Get.put(CreateBundleController());
   int? expandedIndex;
 
@@ -59,14 +55,12 @@ class _BundelsScreenState extends State<BundelsScreen> {
         ],
       ),
       body: Obx(() {
-        // Show loading spinner
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
         }
 
         final bundleList = controller.bundles;
 
-        // Show empty state
         if (bundleList.isEmpty) {
           return const Center(
             child: AppText(
@@ -77,7 +71,6 @@ class _BundelsScreenState extends State<BundelsScreen> {
           );
         }
 
-        // Show bundle list
         return Column(
           children: [
             Expanded(
@@ -197,7 +190,9 @@ class _BundelsScreenState extends State<BundelsScreen> {
                               });
                             },
                             onJoinBundle: () {
-                              print("Join bundle: ${bundle.id}");
+                              print("🎯 Join bundle button clicked for: ${bundle.id}");
+                              print("Bundle title: ${bundle.title}");
+                              print("Current participants: ${bundle.currentParticipants}/${bundle.maxParticipants}");
                               controller.joinNaibrlyBundle(context, bundle.id);
                             },
                           ),
@@ -317,57 +312,6 @@ class _BundelsScreenState extends State<BundelsScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildCategoryFilter() {
-    return Container(
-      height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          _buildCategoryChip('All', selectedCategory == 'All'),
-          const SizedBox(width: 8),
-          ...categories.map((category) {
-            final categoryName = category['name'] ?? 'Unknown';
-            final isSelected = selectedCategory == categoryName;
-            return Row(
-              children: [
-                _buildCategoryChip(categoryName, isSelected),
-                const SizedBox(width: 8),
-              ],
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryChip(String name, bool isSelected) {
-    return IosTapEffect(
-      onTap: () {
-        setState(() {
-          selectedCategory = name;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.grey.shade300,
-            width: 1,
-          ),
-        ),
-        child: AppText(
-          name,
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: isSelected ? Colors.white : Colors.grey.shade600,
-        ),
-      ),
     );
   }
 }
