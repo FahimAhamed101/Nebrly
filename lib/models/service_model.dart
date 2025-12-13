@@ -1,0 +1,99 @@
+// models/service_model.dart
+class Service {
+  final String id;
+  final String name;
+  final String image;
+  final double hourlyRate;
+  final String description;
+  final bool isActive;
+  final Map<String, dynamic>? categoryType;
+  final Map<String, dynamic>? category;
+
+  Service({
+    required this.id,
+    required this.name,
+    required this.image,
+    required this.hourlyRate,
+    required this.description,
+    required this.isActive,
+    this.categoryType,
+    this.category,
+  });
+
+  factory Service.fromJson(Map<String, dynamic> json) {
+    String imageUrl = '';
+
+    // Handle service image - it can be either a String or an Object with url
+    if (json['image'] != null) {
+      if (json['image'] is String) {
+        imageUrl = json['image'];
+      } else if (json['image'] is Map && json['image']['url'] != null) {
+        imageUrl = json['image']['url'] ?? '';
+      }
+    }
+
+    // If no service image, try category type image
+    if (imageUrl.isEmpty && json['categoryType']?['image'] != null) {
+      if (json['categoryType']['image'] is String) {
+        imageUrl = json['categoryType']['image'];
+      } else if (json['categoryType']['image'] is Map) {
+        imageUrl = json['categoryType']['image']['url'] ?? '';
+      }
+    }
+
+    // If still no image, try category image
+    if (imageUrl.isEmpty && json['categoryType']?['category']?['image'] != null) {
+      if (json['categoryType']['category']['image'] is String) {
+        imageUrl = json['categoryType']['category']['image'];
+      } else if (json['categoryType']['category']['image'] is Map) {
+        imageUrl = json['categoryType']['category']['image']['url'] ?? '';
+      }
+    }
+
+    return Service(
+      id: json['_id'] ?? '',
+      name: json['name'] ?? '',
+      image: imageUrl,
+      hourlyRate: (json['defaultHourlyRate'] ?? 0).toDouble(),
+      description: json['description'] ?? '',
+      isActive: json['isActive'] ?? true,
+      categoryType: json['categoryType'],
+      category: json['categoryType']?['category'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'image': image,
+      'hourlyRate': hourlyRate,
+      'description': description,
+      'isActive': isActive,
+      'categoryType': categoryType,
+      'category': category,
+    };
+  }
+
+  factory Service.fromMap(Map<String, dynamic> map) {
+    return Service(
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      image: map['image'] ?? '',
+      hourlyRate: (map['hourlyRate'] ?? 0).toDouble(),
+      description: map['description'] ?? '',
+      isActive: map['isActive'] ?? true,
+      categoryType: map['categoryType'],
+      category: map['category'],
+    );
+  }
+
+  String get title => name;
+
+  double get minPrice => hourlyRate * 0.8;
+  double get maxPrice => hourlyRate * 1.2;
+
+  bool get hasNetworkImage => image.isNotEmpty && image.startsWith('http');
+
+  bool get hasAssetImage => image.isNotEmpty && image.startsWith('assets/');
+}
