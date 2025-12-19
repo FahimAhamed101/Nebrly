@@ -24,7 +24,7 @@ class ProfileController extends GetxController {
         final user = UserModel.fromJson(userJson);
         print("Error fetching user data: ${data}");
         profileInfo.value = user;
-
+        update();
       } else {
         print("Error: ${response.statusCode} - ${response.body}");
       }

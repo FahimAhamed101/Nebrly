@@ -8,6 +8,31 @@ class MainApiService extends GetxService {  // Changed from MainApiService to Ap
   static const String baseUrl = "https://naibrly-backend-main-1.onrender.com/api/";
   final TokenService _tokenService = Get.find<TokenService>();
 
+
+  static Future<Map<String, dynamic>> getProviderServiceDetails(
+      String providerId,
+      String serviceName
+      ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/providers/$providerId/services/$serviceName'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data;
+      } else {
+        throw Exception('Failed to load provider data: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Network error: $e');
+    }
+  }
+
+
   // Headers for API requests
   Map<String, String> getHeaders({bool includeAuth = true}) {
     final headers = {

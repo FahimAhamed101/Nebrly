@@ -8,6 +8,7 @@ class Service {
   final bool isActive;
   final Map<String, dynamic>? categoryType;
   final Map<String, dynamic>? category;
+  final String? providerId; // Add this
 
   Service({
     required this.id,
@@ -18,12 +19,13 @@ class Service {
     required this.isActive,
     this.categoryType,
     this.category,
+    this.providerId, // Add to constructor
   });
 
   factory Service.fromJson(Map<String, dynamic> json) {
     String imageUrl = '';
 
-    // Handle service image - it can be either a String or an Object with url
+    // Handle service image
     if (json['image'] != null) {
       if (json['image'] is String) {
         imageUrl = json['image'];
@@ -59,41 +61,14 @@ class Service {
       isActive: json['isActive'] ?? true,
       categoryType: json['categoryType'],
       category: json['categoryType']?['category'],
+      providerId: json['providerId'], // Add this if available in your API
     );
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'name': name,
-      'image': image,
-      'hourlyRate': hourlyRate,
-      'description': description,
-      'isActive': isActive,
-      'categoryType': categoryType,
-      'category': category,
-    };
-  }
-
-  factory Service.fromMap(Map<String, dynamic> map) {
-    return Service(
-      id: map['id'] ?? '',
-      name: map['name'] ?? '',
-      image: map['image'] ?? '',
-      hourlyRate: (map['hourlyRate'] ?? 0).toDouble(),
-      description: map['description'] ?? '',
-      isActive: map['isActive'] ?? true,
-      categoryType: map['categoryType'],
-      category: map['category'],
-    );
-  }
-
-  String get title => name;
-
+  // Add getters for price calculations
   double get minPrice => hourlyRate * 0.8;
   double get maxPrice => hourlyRate * 1.2;
 
   bool get hasNetworkImage => image.isNotEmpty && image.startsWith('http');
-
   bool get hasAssetImage => image.isNotEmpty && image.startsWith('assets/');
 }

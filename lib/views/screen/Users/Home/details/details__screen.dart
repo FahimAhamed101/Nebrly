@@ -6,12 +6,18 @@ import 'package:naibrly/views/screen/Users/Home/details/provider_details_screen.
 import 'package:naibrly/widgets/bundle_card.dart';
 import 'package:naibrly/services/mock_data_service.dart';
 import 'package:naibrly/models/service_model.dart';
+import 'package:naibrly/services/api_service.dart';
+import 'dart:convert';
+
+import '../../../../../provider/services/api_service.dart';
 
 class DetailsScreen extends StatefulWidget {
   final Service? service;
   final String? bundleId;
   final String? requestId;
   final String? customerId;
+  final String? providerId;
+  final String? selectedServiceName;
 
   const DetailsScreen({
     super.key,
@@ -19,6 +25,8 @@ class DetailsScreen extends StatefulWidget {
     this.bundleId,
     this.requestId,
     this.customerId,
+    this.providerId,
+    this.selectedServiceName,
   });
 
   @override
@@ -29,36 +37,141 @@ class _DetailsScreenState extends State<DetailsScreen> {
   int? expandedIndex;
   List<Map<String, dynamic>> bundles = [];
   bool isLoadingBundles = true;
+  bool isLoadingProviderData = false;
   String errorMessage = '';
+  Map<String, dynamic>? providerData;
+  List<dynamic> otherServices = [];
 
   // Get service data from widget or use default
   Service get serviceData {
-    return widget.service ?? Service(
+    if (widget.service != null) {
+      return widget.service!;
+    }
+
+    // Create default service based on selectedServiceName
+    double hourlyRate = 50.0;
+    String description = 'Professional service provider';
+
+    if (widget.selectedServiceName == 'Electrical') {
+      hourlyRate = 75.0;
+      description = 'Professional electrical services including wiring, repairs, installations, and maintenance for residential and commercial properties.';
+    } else if (widget.selectedServiceName == 'Appliance Repairs') {
+      hourlyRate = 50.0;
+      description = 'Our Appliance Repairs service covers the repair of your everyday appliances, such as refrigerators, washing machines, microwaves, air conditioners, and more.';
+    } else if (widget.selectedServiceName == 'Security Camera Installation') {
+      hourlyRate = 2.0;
+      description = 'Expert security camera installation services including setup, configuration, and maintenance.';
+    }
+
+    return Service(
       id: 'default',
-      name: 'Appliance Repairs',
-      image: 'assets/images/e0a5051b9af8512d821599ee993492a9954bb256.png',
-      hourlyRate: 50.0,
-      description: 'Our Appliance Repairs service covers the repair of your everyday appliances, such as refrigerators, washing machines, microwaves, air conditioners, and more. Our experienced technicians will efficiently and effectively solve any issues with your appliances.',
+      name: widget.selectedServiceName ?? 'Service',
+      image: 'assets/images/service_placeholder.png',
+      hourlyRate: hourlyRate,
+      description: description,
       isActive: true,
+      providerId: widget.providerId,
     );
   }
-
-  // Calculate min and max price based on hourly rate
-  double get minPrice => serviceData.hourlyRate * 0.8;
-  double get maxPrice => serviceData.hourlyRate * 1.2;
-  double get averagePrice => (minPrice + maxPrice) / 2;
 
   @override
   void initState() {
     super.initState();
     _loadBundles();
+
+    // Fetch provider data if providerId is available
+    if (widget.providerId != null && widget.selectedServiceName != null) {
+      _fetchProviderData();
+    }
+  }
+
+  Future<void> _fetchProviderData() async {
+    if (widget.providerId == null || widget.selectedServiceName == null) {
+      return;
+    }
+
+    setState(() {
+      isLoadingProviderData = true;
+      errorMessage = '';
+    });
+
+    try {
+      // Call your API endpoint
+      final response = await MainApiService.getProviderServiceDetails(
+        widget.providerId!,
+        widget.selectedServiceName!,
+      );
+
+      if (response['success'] == true && response['data'] != null) {
+        setState(() {
+          providerData = response['data'];
+          if (providerData?['otherServices'] != null) {
+            otherServices = List<dynamic>.from(providerData!['otherServices']);
+          }
+          isLoadingProviderData = false;
+        });
+      } else {
+        setState(() {
+          errorMessage = 'Failed to load provider data';
+          isLoadingProviderData = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Error loading provider data: $e';
+        isLoadingProviderData = false;
+      });
+      print('Provider data fetch error: $e');
+    }
+  }
+
+  // Calculate min and max price based on hourly rate from API or service data
+  double get minPrice {
+    if (providerData != null && providerData!['selectedService'] != null) {
+      final hourlyRate = (providerData!['selectedService']['hourlyRate'] ?? 0).toDouble();
+      return hourlyRate * 0.8;
+    }
+    return serviceData.hourlyRate * 0.8;
+  }
+
+  double get maxPrice {
+    if (providerData != null && providerData!['selectedService'] != null) {
+      final hourlyRate = (providerData!['selectedService']['hourlyRate'] ?? 0).toDouble();
+      return hourlyRate * 1.2;
+    }
+    return serviceData.hourlyRate * 1.2;
+  }
+
+  double get averagePrice => (minPrice + maxPrice) / 2;
+
+  // Get the hourly rate from API or service data
+  double get hourlyRate {
+    if (providerData != null && providerData!['selectedService'] != null) {
+      return (providerData!['selectedService']['hourlyRate'] ?? 0).toDouble();
+    }
+    return serviceData.hourlyRate;
+  }
+
+  // Get service name from API or service data
+  String get serviceName {
+    if (providerData != null && providerData!['selectedService'] != null) {
+      return providerData!['selectedService']['name'] ?? serviceData.name;
+    }
+    return serviceData.name;
+  }
+
+  // Get provider name from API or service data
+  String get providerName {
+    if (providerData != null && providerData!['provider'] != null) {
+      return providerData!['provider']['businessName'] ?? 'Provider';
+    }
+    return 'Professional Provider';
   }
 
   Future<void> _loadBundles() async {
     try {
       setState(() {
         isLoadingBundles = true;
-        errorMessage = '';
       });
 
       await MockDataService.initialize();
@@ -122,7 +235,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
         backgroundColor: Colors.green,
       ),
     );
-    // Here you would typically use Clipboard.setData
   }
 
   void _handleOpenBundleDetails(String bundleId) {
@@ -132,7 +244,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
         backgroundColor: Colors.blue,
       ),
     );
-    // Navigate to bundle details screen
   }
 
   void _handleOpenRequestDetails(String requestId) {
@@ -142,7 +253,24 @@ class _DetailsScreenState extends State<DetailsScreen> {
         backgroundColor: Colors.blue,
       ),
     );
-    // Navigate to request details screen
+  }
+
+  void _navigateToProviderDetails() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProviderDetailsScreen(
+          providerName: providerName,
+          rating: providerData != null
+              ? "${providerData!['provider']['rating']} (${providerData!['provider']['totalReviews']} reviews)"
+              : "4.5 (6 reviews)",
+          status: "Available Now",
+          location: "Serving your area",
+          price: "\$${hourlyRate.toStringAsFixed(0)}/hour",
+          review: "Professional service with excellent customer satisfaction",
+        ),
+      ),
+    );
   }
 
   @override
@@ -151,7 +279,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.White,
         title: AppText(
-          serviceData.name,
+          serviceName,
           fontSize: 18,
           fontWeight: FontWeight.bold,
         ),
@@ -164,6 +292,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Display provider info if available
+            if (widget.providerId != null)
+              _buildProviderInfoSection(),
+
             // Display bundle and request IDs if available
             if (widget.bundleId != null || widget.requestId != null || widget.customerId != null)
               _buildIdSection(),
@@ -179,6 +311,204 @@ class _DetailsScreenState extends State<DetailsScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildProviderInfoSection() {
+    if (isLoadingProviderData) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              offset: const Offset(0, 1),
+              blurRadius: 15,
+            ),
+          ],
+          border: Border.all(
+            width: 0.8,
+            color: Colors.black.withOpacity(0.10),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.grey.shade300,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 16,
+                    width: 150,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      color: Colors.grey.shade300,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 12,
+                    width: 100,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(4),
+                      color: Colors.grey.shade300,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (errorMessage.isNotEmpty && errorMessage.contains('provider data')) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.shade200),
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 24),
+            const SizedBox(height: 8),
+            AppText(
+              errorMessage,
+              color: Colors.red,
+              fontSize: 12,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (providerData != null && providerData!['provider'] != null) {
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              offset: const Offset(0, 1),
+              blurRadius: 15,
+            ),
+          ],
+          border: Border.all(
+            width: 0.8,
+            color: Colors.black.withOpacity(0.10),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.primary.withOpacity(0.1),
+                  ),
+                  child: Icon(
+                    Icons.business,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppText(
+                        providerData!['provider']['businessName'] ?? 'Provider',
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.star, size: 16, color: Colors.amber),
+                          const SizedBox(width: 4),
+                          AppText(
+                            "${providerData!['provider']['rating']} (${providerData!['provider']['totalReviews']} reviews)",
+                            fontSize: 14,
+                            color: Colors.grey.shade700,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (otherServices.isNotEmpty) ...[
+              AppText(
+                "Other Services Offered:",
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: otherServices.map<Widget>((service) {
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppText(
+                          service['name'] ?? 'Service',
+                          fontSize: 12,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        const SizedBox(width: 4),
+                        AppText(
+                          "\$${service['hourlyRate']}/hr",
+                          fontSize: 10,
+                          color: Colors.green,
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    return Container(); // Return empty container if no provider data
   }
 
   Widget _buildIdSection() {
@@ -204,12 +534,23 @@ class _DetailsScreenState extends State<DetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (widget.providerId != null) ...[
+            _buildClickableId(
+              label: 'Provider ID',
+              id: widget.providerId!,
+              icon: Icons.business,
+              color: Colors.purple,
+              onTap: () => _navigateToProviderDetails(),
+            ),
+            const SizedBox(height: 8),
+          ],
           if (widget.bundleId != null) ...[
             _buildClickableId(
               label: 'Bundle ID',
               id: widget.bundleId!,
               icon: Icons.inventory,
               color: Colors.orange,
+              onTap: () => _handleOpenBundleDetails(widget.bundleId!),
             ),
             const SizedBox(height: 8),
           ],
@@ -219,6 +560,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
               id: widget.requestId!,
               icon: Icons.request_page,
               color: Colors.blue,
+              onTap: () => _handleOpenRequestDetails(widget.requestId!),
             ),
             const SizedBox(height: 8),
           ],
@@ -228,6 +570,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
               id: widget.customerId!,
               icon: Icons.person,
               color: Colors.green,
+              onTap: () => _handleCopyToClipboard(widget.customerId!, 'Customer ID'),
             ),
           ],
         ],
@@ -240,6 +583,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
     required String id,
     required IconData icon,
     required Color color,
+    required VoidCallback onTap,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,15 +602,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
         ),
         const SizedBox(height: 4),
         IosTapEffect(
-          onTap: () {
-            if (label == 'Bundle ID') {
-              _handleOpenBundleDetails(id);
-            } else if (label == 'Request ID') {
-              _handleOpenRequestDetails(id);
-            } else {
-              _handleCopyToClipboard(id, label);
-            }
-          },
+          onTap: onTap,
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
@@ -289,6 +625,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 ),
                 const SizedBox(width: 8),
                 Icon(
+                  label == 'Provider ID' ? Icons.person_search :
                   label.contains('ID') ? Icons.open_in_new : Icons.content_copy,
                   size: 16,
                   color: color,
@@ -322,7 +659,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image Section - Fixed to handle both network and asset images
+          // Image Section
           ClipRRect(
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(12),
@@ -338,7 +675,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 AppText(
-                  serviceData.name,
+                  serviceName,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
@@ -366,11 +703,25 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 ),
                 const SizedBox(height: 4),
                 AppText(
-                  "Hourly rate: \$${serviceData.hourlyRate.toStringAsFixed(0)}/hour",
+                  "Hourly rate: \$${hourlyRate.toStringAsFixed(0)}/hour",
                   color: Colors.green,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
+                if (providerData != null && providerData!['provider'] != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.business, size: 16, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      AppText(
+                        providerData!['provider']['businessName'],
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -380,43 +731,10 @@ class _DetailsScreenState extends State<DetailsScreen> {
   }
 
   Widget _buildServiceImage() {
-    if (serviceData.hasNetworkImage) {
-      // Network image from API
-      return Image.network(
-        serviceData.image,
-        width: double.infinity,
-        height: 200,
-        fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return _buildImagePlaceholder(
-            loading: true,
-            progress: loadingProgress.cumulativeBytesLoaded.toDouble(),
-            total: loadingProgress.expectedTotalBytes?.toDouble(),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return _buildImagePlaceholder();
-        },
-      );
-    } else if (serviceData.hasAssetImage) {
-      // Asset image
-      return Image.asset(
-        serviceData.image,
-        width: double.infinity,
-        height: 200,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return _buildImagePlaceholder();
-        },
-      );
-    } else {
-      // No image available
-      return _buildImagePlaceholder();
-    }
+    return _buildImagePlaceholder();
   }
 
-  Widget _buildImagePlaceholder({bool loading = false, double? progress, double? total}) {
+  Widget _buildImagePlaceholder() {
     return Container(
       height: 200,
       width: double.infinity,
@@ -424,30 +742,29 @@ class _DetailsScreenState extends State<DetailsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (loading && progress != null && total != null)
-            CircularProgressIndicator(
-              value: progress / total,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-            )
-          else
-            Icon(
-              Icons.home_repair_service,
-              color: Colors.grey.shade500,
-              size: 50,
-            ),
-          if (loading) const SizedBox(height: 8),
-          if (loading)
+          Icon(
+            serviceName.contains('Electrical') ? Icons.electrical_services :
+            serviceName.contains('Appliance') ? Icons.home_repair_service :
+            serviceName.contains('Security') ? Icons.security :
+            Icons.build,
+            color: Colors.grey.shade500,
+            size: 50,
+          ),
+          const SizedBox(height: 8),
+          AppText(
+            serviceName,
+            color: Colors.grey.shade600,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+          if (providerData != null && providerData!['provider'] != null) ...[
+            const SizedBox(height: 8),
             AppText(
-              'Loading image...',
+              "by ${providerData!['provider']['businessName']}",
               color: Colors.grey.shade600,
-              fontSize: 12,
-            )
-          else
-            AppText(
-              'No Image Available',
-              color: Colors.grey.shade600,
-              fontSize: 12,
+              fontSize: 14,
             ),
+          ],
         ],
       ),
     );
@@ -458,7 +775,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText(
-          "${serviceData.name} Service",
+          "$serviceName Service",
           fontSize: 18,
           fontWeight: FontWeight.bold,
           color: Colors.black,
@@ -470,14 +787,6 @@ class _DetailsScreenState extends State<DetailsScreen> {
           fontSize: 15,
           fontWeight: FontWeight.w400,
         ),
-        const SizedBox(height: 8),
-        if (serviceData.categoryType?['name'] != null)
-          AppText(
-            "Category: ${serviceData.categoryType!['name']}",
-            color: Colors.grey.shade600,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
       ],
     );
   }
@@ -517,7 +826,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
         const SizedBox(height: 16),
         if (isLoadingBundles)
           const Center(child: CircularProgressIndicator())
-        else if (errorMessage.isNotEmpty)
+        else if (errorMessage.isNotEmpty && errorMessage.contains('bundles'))
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -608,11 +917,50 @@ class _DetailsScreenState extends State<DetailsScreen> {
   }
 
   Widget _buildProvidersSection() {
+    // If we have provider data from API, show that provider first
+    List<Widget> providerCards = [];
+
+    if (providerData != null && providerData!['provider'] != null) {
+      providerCards.add(
+        _buildProviderCard(
+          providerName,
+          "${providerData!['provider']['rating']} (${providerData!['provider']['totalReviews']} reviews)",
+          "Available Now",
+          "Serving your area",
+          "\$${hourlyRate.toStringAsFixed(0)}/hour",
+          "Professional service provider with excellent customer ratings",
+          isMainProvider: true,
+        ),
+      );
+      providerCards.add(const SizedBox(height: 12));
+    }
+
+    // Add default providers
+    providerCards.addAll([
+      _buildProviderCard(
+        "Jacob Brothers",
+        "5.0 (1,513 reviews)",
+        "Online Now",
+        "12 similar jobs done near you",
+        "\$${hourlyRate.toStringAsFixed(0)}/hr estimated budget",
+        "Jacob says, \"the repair person come on time, diagnosed and fixed the issue with my leaking wa...\"",
+      ),
+      const SizedBox(height: 12),
+      _buildProviderCard(
+        "Mike's Repair Services",
+        "4.8 (892 reviews)",
+        "Available Today",
+        "8 similar jobs done near you",
+        "\$${(hourlyRate * 1.1).toStringAsFixed(0)}/hr estimated budget",
+        "Mike provides excellent service with quick response times and quality workmanship for all appliance repairs.",
+      ),
+    ]);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AppText(
-          "${serviceData.name} Providers",
+          "$serviceName Providers",
           fontSize: 20,
           fontWeight: FontWeight.bold,
           color: Colors.black,
@@ -620,23 +968,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
         const SizedBox(height: 16),
         _buildAverageCostSection(),
         const SizedBox(height: 20),
-        _buildProviderCard(
-            "Jacob Brothers",
-            "5.0 (1,513 reviews)",
-            "Online Now",
-            "12 similar jobs done near you",
-            "\$${serviceData.hourlyRate.toStringAsFixed(0)}/hr estimated budget",
-            "Jacob says, \"the repair person come on time, diagnosed and fixed the issue with my leaking wa...\""
-        ),
-        const SizedBox(height: 12),
-        _buildProviderCard(
-            "Mike's Repair Services",
-            "4.8 (892 reviews)",
-            "Available Today",
-            "8 similar jobs done near you",
-            "\$${(serviceData.hourlyRate * 1.1).toStringAsFixed(0)}/hr estimated budget",
-            "Mike provides excellent service with quick response times and quality workmanship for all appliance repairs."
-        ),
+        ...providerCards,
       ],
     );
   }
@@ -736,23 +1068,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
     );
   }
 
-  Widget _buildProviderCard(String name, String rating, String status, String location, String price, String review) {
+  Widget _buildProviderCard(String name, String rating, String status, String location, String price, String review, {bool isMainProvider = false}) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProviderDetailsScreen(
-              providerName: name,
-              rating: rating,
-              status: status,
-              location: location,
-              price: price,
-              review: review,
-            ),
-          ),
-        );
-      },
+      onTap: _navigateToProviderDetails,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
@@ -768,7 +1086,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
           ],
           border: Border.all(
             width: 0.8,
-            color: Colors.black.withOpacity(0.10),
+            color: isMainProvider ? AppColors.primary.withOpacity(0.3) : Colors.black.withOpacity(0.10),
           ),
         ),
         child: Row(
@@ -779,20 +1097,43 @@ class _DetailsScreenState extends State<DetailsScreen> {
               height: 60,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                color: Colors.grey.shade300,
+                color: isMainProvider ? AppColors.primary.withOpacity(0.1) : Colors.grey.shade300,
               ),
-              child: const Icon(Icons.person, color: Colors.grey),
+              child: Icon(
+                Icons.person,
+                color: isMainProvider ? AppColors.primary : Colors.grey,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText(
-                    name,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                  Row(
+                    children: [
+                      AppText(
+                        name,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                      if (isMainProvider) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: AppText(
+                            'Main Provider',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -808,10 +1149,13 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       Container(
                         width: 8,
                         height: 8,
-                        decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF0E7A60)),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isMainProvider ? AppColors.primary : const Color(0xFF0E7A60),
+                        ),
                       ),
                       const SizedBox(width: 6),
-                      AppText(status, fontSize: 12, fontWeight: FontWeight.w400, color: const Color(0xFF0E7A60)),
+                      AppText(status, fontSize: 12, fontWeight: FontWeight.w400, color: isMainProvider ? AppColors.primary : const Color(0xFF0E7A60)),
                     ],
                   ),
                   const SizedBox(height: 4),

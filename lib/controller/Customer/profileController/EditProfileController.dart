@@ -1,7 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:naibrly/controller/Customer/profileController/profileController.dart';
 import '../../../utils/app_contants.dart';
 import '../../../utils/tokenService.dart';
 
@@ -23,7 +26,6 @@ class EditProfileController extends GetxController {
     }
   }
 
-  // Update profile with form-data
   Future<void> updateProfile({
     required String firstName,
     required String lastName,
@@ -35,6 +37,15 @@ class EditProfileController extends GetxController {
     required String aptSuite,
     File? profileImage,
   }) async {
+    final BuildContext? context = Get.context;
+    if (context == null) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(child: CircularProgressIndicator()),
+    );
+
     try {
       // Create multipart request
       var request = http.MultipartRequest(
@@ -60,29 +71,58 @@ class EditProfileController extends GetxController {
       request.fields['aptSuite'] = aptSuite;
 
       // Add image file if selected
-      if (profileImage != null) {
-        request.files.add(
-          await http.MultipartFile.fromPath(
-            'profileImage',
-            profileImage.path,
-          ),
+      if (profileImage != null && profileImage.existsSync()) {
+        var multipartFile = await http.MultipartFile.fromPath(
+          'profileImage',
+          profileImage.path,
+          filename: 'profile_${DateTime
+              .now()
+              .millisecondsSinceEpoch}.jpg',
         );
+        request.files.add(multipartFile);
       }
 
       // Send request
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
 
-      if (response.statusCode == 200) {
-        Get.back();
-        Get.snackbar("Success", "Profile updated successfully");
+
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Close loading
+        Navigator.of(context, rootNavigator: true).pop();
+
+        // Navigate back
+        Navigator.of(context).pop();
+        Get.find<ProfileController>().fetchUserData();
+        // Show simple toast using ScaffoldMessenger
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Profile updated successfully"),
+            backgroundColor: Colors.green,
+          ),
+        );
       } else {
-        Get.snackbar("Error", "Failed to update profile: ${response.statusCode}");
-        print("Error response: ${response.body}");
+        // Handle error
+        Navigator.of(context, rootNavigator: true).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to update profile"),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
-      Get.snackbar("Error", "Failed to update profile: $e");
-      print("Exception: $e");
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error: ${e.toString()}"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
+
 }

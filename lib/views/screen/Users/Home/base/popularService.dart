@@ -206,7 +206,12 @@ class Popularservice extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => DetailsScreen(service: service),
+                builder: (context) => DetailsScreen(
+                  service: service,
+                  // Add these parameters if you have them
+                  providerId: service.providerId, // Add this to your Service model
+                  selectedServiceName: service.name,
+                ),
               ),
             );
           },
