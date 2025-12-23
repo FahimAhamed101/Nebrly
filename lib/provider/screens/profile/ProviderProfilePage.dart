@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_advanced_switch/flutter_advanced_switch.dart';
 
-import '../../controllers/ProviderProfileController.dart' show ProfileController, ProviderProfileController;
+import '../../../widgets/payment_confirmation_bottom_sheet.dart';
+
+import '../../controllers/ProviderProfileController.dart';
 import '../../widgets/profile/address_change_section.dart';
 import '../../widgets/profile/my_information_section.dart';
 import '../../widgets/profile/my_services_section.dart';
@@ -66,7 +68,13 @@ class _ProfilePageState extends State<ProviderProfilePage> {
                 ),
                 const SizedBox(height: 20),
 
-                const ProfileHeader(),
+                ProfileHeader(
+                  onWithdrawPressed: () {
+                    // Your withdraw logic here
+                    _showWithdrawBottomSheet(context);
+                  },
+                ),
+
 
                 const SizedBox(height: 30),
                 const MyInformationSection(),
@@ -181,4 +189,15 @@ class _ProfilePageState extends State<ProviderProfilePage> {
       ),
     );
   }
+}
+
+void _showWithdrawBottomSheet(BuildContext context) {
+  showWithdrawBottomSheet(
+    context,
+    onSuccess: () => _showSuccessBottomSheet(context),
+  );
+}
+
+void _showSuccessBottomSheet(BuildContext context) {
+  showSuccessBottomSheet(context);
 }

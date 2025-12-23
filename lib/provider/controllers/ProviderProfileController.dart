@@ -42,34 +42,7 @@ class ProviderProfileController extends GetxController {
     await fetchProfile();
   }
 
-  Future<bool> updateProfile(Map<String, dynamic> data) async {
-    try {
-      isLoading.value = true;
-      final success = await _apiService.updateProfile(data);
-      if (success) {
-        await fetchProfile(); // Refresh profile data
-        Get.snackbar(
-          'Success',
-          'Profile updated successfully',
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 2),
-        );
-        return true;
-      }
-      return false;
-    } catch (e) {
-      error.value = e.toString();
-      Get.snackbar(
-        'Error',
-        'Failed to update profile: ${e.toString()}',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 3),
-      );
-      return false;
-    } finally {
-      isLoading.value = false;
-    }
-  }
+
 
   // Helper getters for common data
   String get businessName => user.value?.businessNameRegistered ?? 'Loading...';

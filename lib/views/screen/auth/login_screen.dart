@@ -27,10 +27,10 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     // Set default email and password after the widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // controller.emailController.text = "prov1@gmail.com";
-      // controller.passwordController.text = "Password@123";
-       controller.emailController.text = "afaysal220@gmail.com";
-          controller.passwordController.text = "AbcD@7281";
+       controller.emailController.text = "prov1@gmail.com";
+     controller.passwordController.text = "Password@123";
+      //  controller.emailController.text = "afaysal220@gmail.com";
+      //     controller.passwordController.text = "AbcD@7281";
     });
   }
 

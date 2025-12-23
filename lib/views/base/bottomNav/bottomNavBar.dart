@@ -23,8 +23,8 @@ class IosStyleBottomNavigations extends StatelessWidget {
     if (userRole == 'provider') {
       return [
         "assets/icons/elements.svg", // Home for provider
-        "assets/icons/orders.svg", // Orders icon
-        "assets/icons/notification.svg", // Notifications icon
+        "assets/images/ordersIcon.svg", // Orders icon
+        "assets/images/notification.svg", // Notifications icon
         "assets/icons/user.svg", // Profile
       ];
     } else {

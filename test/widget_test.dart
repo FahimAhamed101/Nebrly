@@ -9,7 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:naibrly/main.dart';
-import 'package:naibrly/provider/screens/welcome_screen.dart';
+import 'package:naibrly/views/screen/welcome/welcome_screen.dart';
+
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {

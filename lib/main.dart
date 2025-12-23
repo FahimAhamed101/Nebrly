@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:naibrly/provider/controllers/ProviderProfileController.dart';
 import 'package:naibrly/provider/controllers/feedback_controller.dart';
 import 'package:naibrly/provider/controllers/home_controller.dart';
+import 'package:naibrly/provider/controllers/updateprofile_controller.dart';
 import 'package:naibrly/provider/controllers/verify_information_controller.dart';
 import 'package:naibrly/provider/services/analytics_service.dart';
 import 'package:naibrly/provider/services/api_service.dart';
@@ -56,6 +57,7 @@ void main() async {
   Get.put(QuickChatController());
   Get.put(SocketService());
   Get.put(SocketController());
+  Get.put(ProfileController());
   await Get.putAsync<RequestController>(() async {
     final controller = RequestController();
     // Manually call onInit AFTER token service is ready

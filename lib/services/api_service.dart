@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import '../utils/tokenService.dart';
 
 class MainApiService extends GetxService {  // Changed from MainApiService to ApiService
-  static const String baseUrl = "https://naibrly-backend-main-1.onrender.com/api/";
+  static const String baseUrl = "https://naibrly-backend-main.onrender.com/api/";
   final TokenService _tokenService = Get.find<TokenService>();
 
 
@@ -14,8 +14,12 @@ class MainApiService extends GetxService {  // Changed from MainApiService to Ap
       String serviceName
       ) async {
     try {
+      // FIX: Remove the duplicate /api/ - baseUrl already has it
+      final url = '${baseUrl}providers/$providerId/services/$serviceName';
+      print('Full URL: $url');
+
       final response = await http.get(
-        Uri.parse('$baseUrl/api/providers/$providerId/services/$serviceName'),
+        Uri.parse(url),
         headers: {
           'Content-Type': 'application/json',
         },

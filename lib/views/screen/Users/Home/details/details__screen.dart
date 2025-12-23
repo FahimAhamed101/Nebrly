@@ -19,6 +19,12 @@ class DetailsScreen extends StatefulWidget {
   final String? providerId;
   final String? selectedServiceName;
 
+  // Rename to avoid conflict with built-in print()
+  void printProviderDetails() {
+    print('Provider ID: $providerId');
+    print('Selected Service: $selectedServiceName');
+  }
+
   const DetailsScreen({
     super.key,
     this.service,
@@ -79,9 +85,19 @@ class _DetailsScreenState extends State<DetailsScreen> {
     super.initState();
     _loadBundles();
 
+    // Debug what's being passed
+    print('📋 DetailsScreen initState called');
+    print('widget.providerId: ${widget.providerId}');
+    print('widget.selectedServiceName: ${widget.selectedServiceName}');
+
     // Fetch provider data if providerId is available
     if (widget.providerId != null && widget.selectedServiceName != null) {
+      print('✅ Both providerId and selectedServiceName are available, calling _fetchProviderData');
       _fetchProviderData();
+    } else {
+      print('❌ Missing data for provider fetch:');
+      print('   providerId is null: ${widget.providerId == null}');
+      print('   selectedServiceName is null: ${widget.selectedServiceName == null}');
     }
   }
 
@@ -91,6 +107,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
     }
 
     setState(() {
+
       isLoadingProviderData = true;
       errorMessage = '';
     });
@@ -917,42 +934,190 @@ class _DetailsScreenState extends State<DetailsScreen> {
   }
 
   Widget _buildProvidersSection() {
-    // If we have provider data from API, show that provider first
+    print('🔍 Building providers section...');
+    print('providerData is null: ${providerData == null}');
+    print('isLoadingProviderData: $isLoadingProviderData');
+
+    if (providerData != null) {
+      print('providerData keys: ${providerData!.keys}');
+      print('provider exists: ${providerData!['provider'] != null}');
+    }
+
     List<Widget> providerCards = [];
 
+    // Show loading state
+    if (isLoadingProviderData) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText(
+            "$serviceName Providers",
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+          const SizedBox(height: 16),
+          _buildAverageCostSection(),
+          const SizedBox(height: 20),
+          const Center(
+            child: CircularProgressIndicator(),
+          ),
+        ],
+      );
+    }
+
+    // Show API provider data if available
     if (providerData != null && providerData!['provider'] != null) {
+      final provider = providerData!['provider'];
+      final selectedService = providerData!['selectedService'];
+
+      print('✅ Adding main provider card');
+      print('Business Name: ${provider['businessName']}');
+      print('Provider ID: ${provider['id']}');
+
+      // Get hourly rate safely
+      final selectedServiceHourlyRate = selectedService != null && selectedService['hourlyRate'] != null
+          ? selectedService['hourlyRate'].toDouble()
+          : hourlyRate;
+
       providerCards.add(
-        _buildProviderCard(
-          providerName,
-          "${providerData!['provider']['rating']} (${providerData!['provider']['totalReviews']} reviews)",
-          "Available Now",
-          "Serving your area",
-          "\$${hourlyRate.toStringAsFixed(0)}/hour",
-          "Professional service provider with excellent customer ratings",
-          isMainProvider: true,
+        InkWell(
+          onTap: () {
+            print('🔥 Tapping main provider card');
+            print('Navigating with providerId: ${provider['id']}');
+            print('Navigating with serviceName: $serviceName');
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProviderDetailsScreen(
+                  providerId: provider['id'],
+                  selectedServiceName: serviceName,
+                  providerName: provider['businessName'] ?? providerName,
+                  rating: "${provider['rating']} (${provider['totalReviews']} reviews)",
+                  status: "Available Now",
+                  location: "Serving your area",
+                  price: "\$${selectedServiceHourlyRate.toStringAsFixed(0)}/hour",
+                  review: "Professional service provider with excellent customer ratings",
+                ),
+              ),
+            );
+          },
+          child: _buildProviderCard(
+            provider['businessName'] ?? providerName,
+            "${provider['rating'] ?? 0.0} (${provider['totalReviews'] ?? 0} reviews)",
+            "Available Now",
+            "Serving your area",
+            "\$${selectedServiceHourlyRate.toStringAsFixed(0)}/hour",
+            "Professional service provider with excellent customer ratings",
+            isMainProvider: true,
+          ),
         ),
       );
       providerCards.add(const SizedBox(height: 12));
+    } else if (errorMessage.isNotEmpty) {
+      // Show error state
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppText(
+            "$serviceName Providers",
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red.shade200),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 24),
+                const SizedBox(height: 8),
+                AppText(
+                  'Failed to load provider data: $errorMessage',
+                  color: Colors.red,
+                  fontSize: 14,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: _fetchProviderData,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    } else {
+      print('⚠️ No API provider data available, showing only default providers');
     }
 
     // Add default providers
     providerCards.addAll([
-      _buildProviderCard(
-        "Jacob Brothers",
-        "5.0 (1,513 reviews)",
-        "Online Now",
-        "12 similar jobs done near you",
-        "\$${hourlyRate.toStringAsFixed(0)}/hr estimated budget",
-        "Jacob says, \"the repair person come on time, diagnosed and fixed the issue with my leaking wa...\"",
+      InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProviderDetailsScreen(
+                providerId: "jacob_brothers_default",
+                selectedServiceName: serviceName,
+                providerName: "Jacob Brothers",
+                rating: "5.0 (1,513 reviews)",
+                status: "Online Now",
+                location: "12 similar jobs done near you",
+                price: "\$${hourlyRate.toStringAsFixed(0)}/hr estimated budget",
+                review: "Jacob says, \"the repair person come on time, diagnosed and fixed the issue with my leaking wa...\"",
+              ),
+            ),
+          );
+        },
+        child: _buildProviderCard(
+          "Jacob Brothers",
+          "5.0 (1,513 reviews)",
+          "Online Now",
+          "12 similar jobs done near you",
+          "\$${hourlyRate.toStringAsFixed(0)}/hr estimated budget",
+          "Jacob says, \"the repair person come on time, diagnosed and fixed the issue with my leaking wa...\"",
+        ),
       ),
       const SizedBox(height: 12),
-      _buildProviderCard(
-        "Mike's Repair Services",
-        "4.8 (892 reviews)",
-        "Available Today",
-        "8 similar jobs done near you",
-        "\$${(hourlyRate * 1.1).toStringAsFixed(0)}/hr estimated budget",
-        "Mike provides excellent service with quick response times and quality workmanship for all appliance repairs.",
+      InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProviderDetailsScreen(
+                providerId: "mike_services_default",
+                selectedServiceName: serviceName,
+                providerName: "Mike's Repair Services",
+                rating: "4.8 (892 reviews)",
+                status: "Available Today",
+                location: "8 similar jobs done near you",
+                price: "\$${(hourlyRate * 1.1).toStringAsFixed(0)}/hr estimated budget",
+                review: "Mike provides excellent service with quick response times and quality workmanship for all appliance repairs.",
+              ),
+            ),
+          );
+        },
+        child: _buildProviderCard(
+          "Mike's Repair Services",
+          "4.8 (892 reviews)",
+          "Available Today",
+          "8 similar jobs done near you",
+          "\$${(hourlyRate * 1.1).toStringAsFixed(0)}/hr estimated budget",
+          "Mike provides excellent service with quick response times and quality workmanship for all appliance repairs.",
+        ),
       ),
     ]);
 

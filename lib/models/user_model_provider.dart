@@ -1,4 +1,3 @@
-
 class UserModel {
   final String id;
   final String firstName;
@@ -26,9 +25,17 @@ class UserModel {
   final double rating;
   final int totalReviews;
   final int totalJobsCompleted;
+  final String? address;
+
+  // Add these missing fields
+  final String? description;
+  final double? locksmithRate;
+  final double? plumberRate;
+  final List<String>? selectedServices;
 
   UserModel({
     required this.id,
+    this.address,
     required this.firstName,
     required this.lastName,
     required this.email,
@@ -54,6 +61,11 @@ class UserModel {
     required this.rating,
     required this.totalReviews,
     required this.totalJobsCompleted,
+    // Add these parameters
+    this.description,
+    this.locksmithRate,
+    this.plumberRate,
+    this.selectedServices,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -88,6 +100,17 @@ class UserModel {
       rating: (json['rating'] ?? 0).toDouble(),
       totalReviews: json['totalReviews'] ?? 0,
       totalJobsCompleted: json['totalJobsCompleted'] ?? 0,
+      // Add these fields
+      description: json['description'],
+      locksmithRate: json['locksmithRate'] != null
+          ? (json['locksmithRate'] as num).toDouble()
+          : null,
+      plumberRate: json['plumberRate'] != null
+          ? (json['plumberRate'] as num).toDouble()
+          : null,
+      selectedServices: json['selectedServices'] != null
+          ? List<String>.from(json['selectedServices'])
+          : null,
     );
   }
 
