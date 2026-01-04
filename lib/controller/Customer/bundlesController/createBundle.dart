@@ -73,11 +73,11 @@ class CreateBundleController extends GetxController {
         // Use ScaffoldMessenger instead of Get.snackbar
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Successfully joined bundle!'),
+            const SnackBar(
+              content: Text('Successfully joined bundle!'),
               backgroundColor: Colors.green,
               behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.all(16),
+              margin: EdgeInsets.all(16),
             ),
           );
         }
@@ -135,8 +135,8 @@ class CreateBundleController extends GetxController {
         // Use ScaffoldMessenger with context
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Bundle created successfully!'),
+            const SnackBar(
+              content: Text('Bundle created successfully!'),
               backgroundColor: Colors.green,
             ),
           );

@@ -121,7 +121,7 @@ class Popularservice extends StatelessWidget {
         children: [
           const Icon(Icons.error_outline, color: Colors.red, size: 48),
           const SizedBox(height: 8),
-          AppText(
+          const AppText(
             'Failed to load services',
             color: AppColors.black,
             fontSize: 16,
@@ -143,7 +143,7 @@ class Popularservice extends StatelessWidget {
                 color: AppColors.primary,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: AppText(
+              child: const AppText(
                 'Try Again',
                 color: AppColors.White,
                 fontSize: 14,
@@ -171,17 +171,17 @@ class Popularservice extends StatelessWidget {
           )
         ],
       ),
-      child: Column(
+      child: const Column(
         children: [
-          const Icon(Icons.search_off, color: Colors.grey, size: 48),
-          const SizedBox(height: 8),
+          Icon(Icons.search_off, color: Colors.grey, size: 48),
+          SizedBox(height: 8),
           AppText(
             'No Services Available',
             color: AppColors.black,
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           AppText(
             'Check back later for available services',
             color: Colors.grey,
@@ -203,13 +203,17 @@ class Popularservice extends StatelessWidget {
 
         return IosTapEffect(
           onTap: () {
+            // Pass the first provider ID if available
+            final firstProviderId = service.providers.isNotEmpty
+                ? service.providers.first
+                : null;
+
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => DetailsScreen(
-                  service: service,
-                  // Add these parameters if you have them
-                  providerId: service.providerId, // Add this to your Service model
+                  service: service, // Pass the whole service object
+                  providerId: firstProviderId,
                   selectedServiceName: service.name,
                 ),
               ),
@@ -260,7 +264,7 @@ class Popularservice extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       AppText(
-                        service.name, // Use service.name instead of service.title
+                        service.name,
                         color: AppColors.black,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -287,7 +291,7 @@ class Popularservice extends StatelessWidget {
                           children: [
                             TextSpan(
                               text: "\$${service.minPrice.toStringAsFixed(0)} - \$${service.maxPrice.toStringAsFixed(0)}",
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.w400,
                               ),
@@ -296,11 +300,33 @@ class Popularservice extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      AppText(
-                        "\$${service.hourlyRate.toStringAsFixed(0)}/hour",
-                        color: Colors.green,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                      Row(
+                        children: [
+                          AppText(
+                            "\$${service.hourlyRate.toStringAsFixed(0)}/hour",
+                            color: Colors.green,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          const SizedBox(width: 8),
+                          if (service.providers.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: AppText(
+                                "${service.providers.length} provider${service.providers.length > 1 ? 's' : ''}",
+                                color: AppColors.primary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                        ],
                       ),
                     ],
                   ),

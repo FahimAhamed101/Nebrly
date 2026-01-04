@@ -32,7 +32,7 @@ class ResetScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Align(
+            const Align(
               alignment: Alignment.topLeft,
               child: AppText(
                 "Reset Your Password",
@@ -42,7 +42,7 @@ class ResetScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            Text(
+            const Text(
               "Enter your email address below and we'll send you a link with instructions.",
               style: TextStyle(
                 fontSize: 14,
@@ -65,7 +65,7 @@ class ResetScreen extends StatelessWidget {
             // Email TextField
             TextField(
               controller: emailController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: "Email Address",
                 // Add any other styling to match AppTextField
               ),
@@ -119,7 +119,7 @@ class ResetScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                AppText(
+                const AppText(
                   "Need Help ",
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -130,7 +130,7 @@ class ResetScreen extends StatelessWidget {
                   width: 2,
                   color: AppColors.black,
                 ),
-                AppText(
+                const AppText(
                   " FAQ ",
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -141,7 +141,7 @@ class ResetScreen extends StatelessWidget {
                   width: 2,
                   color: AppColors.black,
                 ),
-                AppText(
+                const AppText(
                   " Terms Of use ",
                   fontSize: 14,
                   fontWeight: FontWeight.w500,

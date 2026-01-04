@@ -104,7 +104,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
           width: double.infinity,
           child: DropdownButtonFormField<String>(
             isExpanded: true,
-            value: _selectedIssue.isEmpty ? null : _selectedIssue,
+            initialValue: _selectedIssue.isEmpty ? null : _selectedIssue,
             decoration: InputDecoration(
               hintText: "Select one Issue",
               border: OutlineInputBorder(

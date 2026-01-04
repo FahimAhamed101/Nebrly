@@ -16,7 +16,7 @@ class ThankYouScreen extends StatelessWidget {
               Stack(
                 alignment: Alignment.center,
                 children: [
-                  Container(
+                  SizedBox(
                     width: 120,
                     height: 120,
                       child: Image.asset(

@@ -1,22 +1,20 @@
 import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
-
 import '../utils/tokenService.dart';
 
-class MainApiService extends GetxService {  // Changed from MainApiService to ApiService
+class MainApiService extends GetxService {
   static const String baseUrl = "https://naibrly-backend-main.onrender.com/api/";
   final TokenService _tokenService = Get.find<TokenService>();
 
-
+  // Static method for provider service details
   static Future<Map<String, dynamic>> getProviderServiceDetails(
       String providerId,
-      String serviceName
+      String serviceName,
       ) async {
     try {
-      // FIX: Remove the duplicate /api/ - baseUrl already has it
       final url = '${baseUrl}providers/$providerId/services/$serviceName';
-      print('Full URL: $url');
+      print('Fetching provider data from: $url');
 
       final response = await http.get(
         Uri.parse(url),
@@ -36,6 +34,59 @@ class MainApiService extends GetxService {  // Changed from MainApiService to Ap
     }
   }
 
+  // Static method to fetch multiple providers in parallel
+  static Future<Map<String, Map<String, dynamic>>> getMultipleProvidersServiceDetails(
+      List<String> providerIds,
+      String serviceName,
+      ) async {
+    final results = <String, Map<String, dynamic>>{};
+
+    // Fetch all providers in parallel
+    final futures = providerIds.map((providerId) async {
+      try {
+        final data = await getProviderServiceDetails(providerId, serviceName);
+        if (data['success'] == true && data['data'] != null) {
+          results[providerId] = data['data'];
+        }
+      } catch (e) {
+        print('Error fetching provider $providerId: $e');
+        // Continue with other providers even if one fails
+      }
+    });
+
+    await Future.wait(futures);
+    return results;
+  }
+
+  // Alternative: Fetch providers one by one with error handling
+  static Future<List<Map<String, dynamic>>> getProvidersDataSequential(
+      List<String> providerIds,
+      String serviceName,
+      ) async {
+    final results = <Map<String, dynamic>>[];
+
+    for (final providerId in providerIds) {
+      try {
+        final response = await getProviderServiceDetails(providerId, serviceName);
+        if (response['success'] == true && response['data'] != null) {
+          results.add({
+            'providerId': providerId,
+            'data': response['data'],
+          });
+        }
+      } catch (e) {
+        print('Error fetching provider $providerId: $e');
+        // Add placeholder for failed providers
+        results.add({
+          'providerId': providerId,
+          'data': null,
+          'error': e.toString(),
+        });
+      }
+    }
+
+    return results;
+  }
 
   // Headers for API requests
   Map<String, String> getHeaders({bool includeAuth = true}) {

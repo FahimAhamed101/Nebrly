@@ -235,10 +235,10 @@ class SearchResultsScreen extends StatefulWidget {
   final String zipCode;
 
   const SearchResultsScreen({
-    Key? key,
+    super.key,
     required this.serviceName,
     required this.zipCode,
-  }) : super(key: key);
+  });
 
   @override
   State<SearchResultsScreen> createState() => _SearchResultsScreenState();
@@ -1001,11 +1001,11 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
                 Icon(Icons.pages, color: Colors.orange),
-                const SizedBox(width: 8),
-                const Text(
+                SizedBox(width: 8),
+                Text(
                   'Pagination Info',
                   style: TextStyle(
                     fontSize: 16,
@@ -1043,7 +1043,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.info, color: Colors.blue, size: 16),
+                    const Icon(Icons.info, color: Colors.blue, size: 16),
                     const SizedBox(width: 8),
                     Text(
                       'More results available',

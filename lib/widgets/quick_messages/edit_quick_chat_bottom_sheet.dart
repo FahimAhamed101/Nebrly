@@ -132,7 +132,7 @@ class _EditQuickChatBottomSheetState extends State<EditQuickChatBottomSheet> {
                 width: 2,
               ),
             ),
-            child: Icon(
+            child: const Icon(
               Icons.edit,
               color: AppColors.primary,
               size: 40,
@@ -142,7 +142,7 @@ class _EditQuickChatBottomSheetState extends State<EditQuickChatBottomSheet> {
           const SizedBox(height: 24),
           
           // Title
-          AppText(
+          const AppText(
             'Edit Quick Chat',
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -152,7 +152,7 @@ class _EditQuickChatBottomSheetState extends State<EditQuickChatBottomSheet> {
           const SizedBox(height: 8),
           
           // Description
-          AppText(
+          const AppText(
             'Customize your preset messages for faster responses.',
             fontSize: 14,
             fontWeight: FontWeight.w400,
@@ -166,7 +166,7 @@ class _EditQuickChatBottomSheetState extends State<EditQuickChatBottomSheet> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppText(
+              const AppText(
                 'Edit answer',
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -190,7 +190,7 @@ class _EditQuickChatBottomSheetState extends State<EditQuickChatBottomSheet> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.primary, width: 2),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 2),
                   ),
                   contentPadding: const EdgeInsets.all(16),
                 ),
@@ -217,11 +217,11 @@ class _EditQuickChatBottomSheetState extends State<EditQuickChatBottomSheet> {
                     ),
                     elevation: 0,
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.send, size: 20),
-                      const SizedBox(width: 8),
+                      Icon(Icons.send, size: 20),
+                      SizedBox(width: 8),
                       AppText(
                         'Send Now',
                         fontSize: 16,
@@ -243,7 +243,7 @@ class _EditQuickChatBottomSheetState extends State<EditQuickChatBottomSheet> {
                   onPressed: _isLoading ? null : _updateMessage,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
-                    side: BorderSide(color: AppColors.primary, width: 2),
+                    side: const BorderSide(color: AppColors.primary, width: 2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -257,7 +257,7 @@ class _EditQuickChatBottomSheetState extends State<EditQuickChatBottomSheet> {
                             valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0E7A60)),
                           ),
                         )
-                      : AppText(
+                      : const AppText(
                           'Save Changes',
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

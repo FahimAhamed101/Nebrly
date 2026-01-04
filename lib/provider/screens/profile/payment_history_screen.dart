@@ -139,11 +139,11 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
             ),
           const SizedBox(width: 16),
 
-          Expanded(
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   "Payment received from",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
@@ -151,8 +151,8 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                     color: Colors.black,
                   ),
                 ),
-                const SizedBox(height: 4),
-                const Text(
+                SizedBox(height: 4),
+                Text(
                   "Jane Doe, Window Clean",
                   style: TextStyle(
                     fontSize: 10,
@@ -163,10 +163,10 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
             ),
           ),
 
-          Column(
+          const Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Text(
+              Text(
                 "-475.00",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
@@ -174,8 +174,8 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                   color: Colors.red,
                 ),
               ),
-              const SizedBox(height: 4),
-              const Text(
+              SizedBox(height: 4),
+              Text(
                 "15:42 11 Sep, 2025",
                 style: TextStyle(
                   fontSize: 10,

@@ -37,13 +37,13 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
+      return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
         ),
       );
     }
 
-    return _isLoggedIn ? BottomMenuWrappers() : LoginScreen();
+    return _isLoggedIn ? const BottomMenuWrappers() : LoginScreen();
   }
 }

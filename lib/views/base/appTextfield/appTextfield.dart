@@ -35,7 +35,7 @@ class AppTextField extends StatelessWidget {
       cursorColor: AppColors.secondary,
       textInputAction: textInputAction,
       onSubmitted: onSubmitted,
-      style: TextStyle(
+      style: const TextStyle(
         fontWeight: FontWeight.w500,
         color: AppColors.primary,
         fontSize: 14,
@@ -43,13 +43,13 @@ class AppTextField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: hint,
         // Grey color when unfocused or empty
-        labelStyle: TextStyle(
+        labelStyle: const TextStyle(
           fontWeight: FontWeight.w400,
           color: AppColors.black50,  // Grey when not focused
           fontSize: 14,
         ),
         // Green color when focused (floating above)
-        floatingLabelStyle: TextStyle(
+        floatingLabelStyle: const TextStyle(
           fontWeight: FontWeight.w500,
           color: AppColors.primary,  // Green when focused
           fontSize: 14,
@@ -67,7 +67,7 @@ class AppTextField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             width: 1.5,
             color: AppColors.black,
           ),
@@ -113,7 +113,7 @@ class AppTextField1 extends StatelessWidget {
       cursorColor: AppColors.secondary,
       textInputAction: textInputAction,
       onSubmitted: onSubmitted,
-      style: TextStyle(
+      style: const TextStyle(
         fontWeight: FontWeight.w500,
         color: AppColors.primary,
         fontSize: 14,
@@ -136,7 +136,7 @@ class AppTextField1 extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(vertical: 13, horizontal: 12),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
               width: 1,
               color: AppColors.blackWhite
           ),

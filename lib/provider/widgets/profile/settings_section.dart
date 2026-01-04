@@ -213,7 +213,7 @@ class SettingsSection extends StatelessWidget {
 
       // Navigate to welcome screen and clear all routes
       // Replace '/welcome' with your actual welcome screen route
-      Get.offAll(() => WelcomeScreen());
+      Get.offAll(() => const WelcomeScreen());
 
       // Show success message
       Get.snackbar(

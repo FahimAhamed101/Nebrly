@@ -61,7 +61,7 @@ class SignInController extends GetxController{
         final id = data['data']['user']['id'];
         final role = data['data']['user']['role'];
         if(role=="customer"){
-          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context)=>ProviderProfilePage()), (Route<dynamic>route)=>false);
+          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context)=>const ProviderProfilePage()), (Route<dynamic>route)=>false);
         }else{
           Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context)=>const NairblyApp()), (Route<dynamic>route)=>false);
         }

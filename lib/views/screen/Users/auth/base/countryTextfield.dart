@@ -24,39 +24,39 @@ class CustomCountryCodePicker extends StatelessWidget {
       showCursor: true,
       readOnly: false, // Prevents manual number input
       showDropdownIcon: true,
-      dropdownTextStyle: TextStyle(
+      dropdownTextStyle: const TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w500,
         color: Colors.black,
       ),
       decoration: InputDecoration(
-        prefixIconConstraints: BoxConstraints(
+        prefixIconConstraints: const BoxConstraints(
           minWidth: 40, // or your desired width
           minHeight: 40, // or your desired height
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: AppColors.Red,
             width: 2,
           ),
         ),
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             width: 1,
             color: AppColors.LightGray,
           ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: Colors.red,
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(
+          borderSide: const BorderSide(
             color: AppColors.primary,
             width: 1.5,
           ),
@@ -73,7 +73,7 @@ class CustomCountryCodePicker extends StatelessWidget {
           fontSize: 14,
           color: Theme.of(context).textTheme.titleSmall?.color,
         ),
-        contentPadding: EdgeInsets.symmetric(horizontal: 1, vertical: 15),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 1, vertical: 15),
       ),
       initialCountryCode: initialCountryCode,
       onChanged: (phone) {

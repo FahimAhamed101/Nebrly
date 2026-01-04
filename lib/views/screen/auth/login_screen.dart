@@ -13,7 +13,7 @@ import '../../base/primaryButton/primary_button.dart';
 import 'base/or/orLogin.dart';
 
 class LoginScreen extends StatefulWidget {
-  LoginScreen({super.key});
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -27,10 +27,10 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     // Set default email and password after the widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
-       controller.emailController.text = "prov1@gmail.com";
-     controller.passwordController.text = "Password@123";
-      //  controller.emailController.text = "afaysal220@gmail.com";
-      //     controller.passwordController.text = "AbcD@7281";
+      //  controller.emailController.text = "prov1@gmail.com";
+      //  controller.passwordController.text = "Password@123";
+       controller.emailController.text = "afaysal220@gmail.com";
+       controller.passwordController.text = "AbcD@7281";
     });
   }
 
@@ -53,14 +53,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 width: 160,
               ),
             ),
-            AppText(
+            const AppText(
               "Welcome Back!",
               fontWeight: FontWeight.w400,
               fontSize: 28,
               color: AppColors.textcolor,
             ),
             SizedBox(height: size.height * 0.01),
-            AppText(
+            const AppText(
               "Hello there, login to continue",
               fontWeight: FontWeight.w300,
               fontSize: 14,
@@ -68,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             SizedBox(height: size.height * 0.03),
             AppTextField(controller: controller.emailController, hint: "Email Address"),
-            SizedBox(height: 15),
+            const SizedBox(height: 15),
             Obx(
                   () => AppTextField(
                 obscure: !controller.passShowHide.value,
@@ -88,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Align(
               alignment: Alignment.topRight,
               child: InkWell(
@@ -98,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   // right for a "Forgot Password?" link
                   Get.toNamed('/reset-password'); // Example navigation
                 },
-                child: AppText(
+                child: const AppText(
                   "Forgot Password?",
                   fontSize: 12,
                   fontWeight: FontWeight.w400,
@@ -123,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 GoogleOrAppcle(onTap: () {}, icon: "assets/icons/Group (5).svg"),
-                SizedBox(width: 16),
+                const SizedBox(width: 16),
                 GoogleOrAppcle(onTap: () {}, icon: "assets/icons/Google (1).svg"),
               ],
             ),
@@ -138,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      AppText("Create account", fontSize: 16, fontWeight: FontWeight.w400, color: AppColors.secondary),
+                      const AppText("Create account", fontSize: 16, fontWeight: FontWeight.w400, color: AppColors.secondary),
                       Container(height: 2, color: AppColors.secondary.withOpacity(0.50)),
                     ],
                   ),
@@ -169,8 +169,8 @@ class GoogleOrAppcle extends StatelessWidget {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: Color(0xFF000000).withOpacity(0.04),
-              offset: Offset(0, 6),
+              color: const Color(0xFF000000).withOpacity(0.04),
+              offset: const Offset(0, 6),
               blurRadius: 24,
             ),
           ],

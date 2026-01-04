@@ -62,15 +62,15 @@ class UserRequestCard extends StatelessWidget {
                             color: const Color(0xFF0E7A60),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: Row(
+                          child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.inventory_2_outlined,
                                 color: Colors.white,
                                 size: 14,
                               ),
-                              const SizedBox(width: 4),
+                              SizedBox(width: 4),
                               AppText(
                                 'Bundle',
                                 fontSize: 11,

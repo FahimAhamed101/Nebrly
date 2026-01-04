@@ -77,7 +77,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => AuthenticationCodeScreen(),
+                    builder: (context) => const AuthenticationCodeScreen(),
                   ),
                 );
               },
@@ -85,18 +85,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             const SizedBox(height: 50),
 
             // Footer links
-            Center(
+            const Center(
               child: Text.rich(
                 TextSpan(
                   text: "Need Help ",
-                  style: const TextStyle(color: Colors.black54),
+                  style: TextStyle(color: Colors.black54),
                   children: [
-                    const TextSpan(text: "| "),
+                    TextSpan(text: "| "),
                     TextSpan(
                       text: "FAQ ",
                       style: TextStyle(color: KoreColors.primary),
                     ),
-                    const TextSpan(text: "| "),
+                    TextSpan(text: "| "),
                     TextSpan(
                       text: "Terms Of Use",
                       style: TextStyle(color: KoreColors.primary),

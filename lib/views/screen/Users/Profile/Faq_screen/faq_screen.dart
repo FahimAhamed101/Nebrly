@@ -13,7 +13,7 @@ class FaqScreen extends StatelessWidget {
     return Scaffold(
         backgroundColor: AppColors.White,
         appBar: AppBar(
-          systemOverlayStyle: SystemUiOverlayStyle(
+          systemOverlayStyle: const SystemUiOverlayStyle(
             statusBarIconBrightness: Brightness.dark,
             statusBarBrightness: Brightness.light,
           ),
@@ -32,7 +32,7 @@ class FaqScreen extends StatelessWidget {
             ),
           ),
 
-          title: AppText(
+          title: const AppText(
             "FAQ",
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -42,7 +42,7 @@ class FaqScreen extends StatelessWidget {
         ),
 
         body: Padding(
-          padding: EdgeInsets.only(left: 0, right: 0, top: 0),
+          padding: const EdgeInsets.only(left: 0, right: 0, top: 0),
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
@@ -79,7 +79,7 @@ class FaqScreen extends StatelessWidget {
                 answer: "Here is another explanation of the process to apply for a campaign.",
               ),
 
-              SizedBox(height: 35),
+              const SizedBox(height: 35),
               Align(
                 alignment: Alignment.center,
                 child: InkWell(
@@ -88,7 +88,7 @@ class FaqScreen extends StatelessWidget {
                   Navigator.push(context, MaterialPageRoute(builder: (builder)=>SupportsScreen()));
 
                   },
-                  child: AppText(
+                  child: const AppText(
                     "Contract Support",
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
@@ -97,7 +97,7 @@ class FaqScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: 35),
+              const SizedBox(height: 35),
 
             ],
           ),
@@ -111,7 +111,7 @@ class FAQItem extends StatefulWidget {
   final String question;
   final String answer;
 
-  FAQItem({required this.question, required this.answer});
+  const FAQItem({super.key, required this.question, required this.answer});
 
   @override
   _FAQItemState createState() => _FAQItemState();
@@ -140,11 +140,11 @@ class _FAQItemState extends State<FAQItem> {
                     widget.question,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF01010B)
+                    color: const Color(0xFF01010B)
                 ),
                 Icon(
                   _isExpanded ? Icons.remove : Icons.add,
-                  color: Color(0xFF01010B),
+                  color: const Color(0xFF01010B),
                   size: 24,
                 ),
               ],
@@ -153,28 +153,28 @@ class _FAQItemState extends State<FAQItem> {
         ),
         //------ AnimatedContainer to expand and collapse content ------//
         AnimatedContainer(
-          duration: Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
-          padding: EdgeInsets.only(left: 24, right: 24, top: 0),
+          padding: const EdgeInsets.only(left: 24, right: 24, top: 0),
           height: _isExpanded ? null : 0,
           child: _isExpanded
               ? Column(
             children: [
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               AppText(
                 widget.answer,
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
-                color: Color(0xFF5B5B5F),
+                color: const Color(0xFF5B5B5F),
               ),
             ],
           )
-              : SizedBox.shrink(),
+              : const SizedBox.shrink(),
         ),
-        SizedBox(height: 10),
+        const SizedBox(height: 10),
         //------- Divider after the item -------//
         Container(
-          margin: EdgeInsets.symmetric(horizontal:20),
+          margin: const EdgeInsets.symmetric(horizontal:20),
           height: 1,
           color: AppColors.LightGray,
         )

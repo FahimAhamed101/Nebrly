@@ -124,7 +124,7 @@ class _EnterNewPasswordScreenState extends State<EnterNewPasswordScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => PayoutInformationScreen(),
+                      builder: (context) => const PayoutInformationScreen(),
                     ),
                   );
                 },

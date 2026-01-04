@@ -78,7 +78,7 @@ class Bundle {
       availableSpots: json['availableSpots'] ?? 0,
       shareToken: json['shareToken'],
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toString()),
-      expiresAt: DateTime.parse(json['expiresAt'] ?? DateTime.now().add(Duration(days: 7)).toString()),
+      expiresAt: DateTime.parse(json['expiresAt'] ?? DateTime.now().add(const Duration(days: 7)).toString()),
       userRole: json['userRole'] ?? 'viewer',
       canJoin: json['canJoin'] ?? false,
       pricing: Pricing.fromJson(json['pricing'] ?? {}),

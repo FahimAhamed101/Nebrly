@@ -12,20 +12,20 @@ class ServiceDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Service Details'),
+        title: const Text('Service Details'),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Get.back(),
         ),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Service header
             Container(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.blue[50],
                 borderRadius: BorderRadius.circular(12),
@@ -36,19 +36,19 @@ class ServiceDetailScreen extends StatelessWidget {
                     radius: 30,
                     backgroundImage: NetworkImage(request.clientImage),
                   ),
-                  SizedBox(width: 16),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           request.serviceName,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
                           'Avg. price: \$${request.pricePerHour.toInt()}/hr',
                           style: TextStyle(
@@ -56,7 +56,7 @@ class ServiceDetailScreen extends StatelessWidget {
                           ),
                         ),
                         if (request.isTeamService)
-                          Padding(
+                          const Padding(
                             padding: EdgeInsets.only(top: 4),
                             child: Row(
                               children: [
@@ -79,7 +79,7 @@ class ServiceDetailScreen extends StatelessWidget {
               ),
             ),
 
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
 
             // Service details
             _buildDetailSection(
@@ -87,14 +87,14 @@ class ServiceDetailScreen extends StatelessWidget {
               children: [
                 _buildDetailRow('Service Type', _getServiceTypeName(request.serviceType)),
                 _buildDetailRow('Status', _getStatusText(request.status)),
-                _buildDetailRow('Date', '${_formatDate(request.date)}'),
+                _buildDetailRow('Date', _formatDate(request.date)),
                 _buildDetailRow('Time', request.time),
                 if (request.problemNote != null)
                   _buildDetailRow('Problem Note', request.problemNote!),
               ],
             ),
 
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
 
             // Client details
             _buildDetailSection(
@@ -109,7 +109,7 @@ class ServiceDetailScreen extends StatelessWidget {
             if (request.isTeamService && request.teamMembers != null && request.teamMembers!.isNotEmpty)
               Column(
                 children: [
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
                   _buildDetailSection(
                     title: 'Team Members',
                     children: request.teamMembers!.map((member) =>
@@ -122,7 +122,7 @@ class ServiceDetailScreen extends StatelessWidget {
             if (request.bundleType != null)
               Column(
                 children: [
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
                   _buildDetailSection(
                     title: 'Bundle Information',
                     children: [
@@ -132,7 +132,7 @@ class ServiceDetailScreen extends StatelessWidget {
                 ],
               ),
 
-            SizedBox(height: 32),
+            const SizedBox(height: 32),
 
             // Action buttons
             if (request.status == RequestStatus.pending)
@@ -147,12 +147,12 @@ class ServiceDetailScreen extends StatelessWidget {
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
-                        padding: EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: Text('Accept Request'),
+                      child: const Text('Accept Request'),
                     ),
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () {
@@ -161,10 +161,10 @@ class ServiceDetailScreen extends StatelessWidget {
                         // Call your decline method here
                       },
                       style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        side: BorderSide(color: Colors.red),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: const BorderSide(color: Colors.red),
                       ),
-                      child: Text(
+                      child: const Text(
                         'Decline',
                         style: TextStyle(color: Colors.red),
                       ),
@@ -193,9 +193,9 @@ class ServiceDetailScreen extends StatelessWidget {
             color: Colors.grey[800],
           ),
         ),
-        SizedBox(height: 12),
+        const SizedBox(height: 12),
         Container(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.grey[50],
             borderRadius: BorderRadius.circular(12),
@@ -212,7 +212,7 @@ class ServiceDetailScreen extends StatelessWidget {
 
   Widget _buildDetailRow(String label, String value) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -230,7 +230,7 @@ class ServiceDetailScreen extends StatelessWidget {
             flex: 3,
             child: Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.w400,
               ),
             ),

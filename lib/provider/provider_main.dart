@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:naibrly/provider/services/api_service.dart';
-import 'package:naibrly/provider/services/home_api_service.dart';
 
 import 'package:naibrly/provider/views/home/home_screen.dart';
 import 'package:naibrly/provider/views/orders/orders_screen.dart';
@@ -14,7 +10,6 @@ import 'package:naibrly/provider/widgets/colors.dart';
 import 'package:naibrly/provider/widgets/home/bottom_navigation.dart';
 
 
-import 'controllers/home_controller.dart';
 
 void main() async   {
   runApp(const MyApp());

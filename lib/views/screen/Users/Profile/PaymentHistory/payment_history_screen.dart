@@ -64,7 +64,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
     return Scaffold(
       backgroundColor: AppColors.White,
       appBar: AppBar(
-        systemOverlayStyle: SystemUiOverlayStyle(
+        systemOverlayStyle: const SystemUiOverlayStyle(
           statusBarIconBrightness: Brightness.dark,
           statusBarBrightness: Brightness.light,
         ),
@@ -230,7 +230,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                       
                       Row(
                         children: [
-                          AppText(
+                          const AppText(
                             'Date: ',
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -243,7 +243,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                             color: AppColors.DarkGray,
                           ),
                           const Spacer(),
-                          AppText(
+                          const AppText(
                             'Method: ',
                             fontSize: 12,
                             fontWeight: FontWeight.w500,

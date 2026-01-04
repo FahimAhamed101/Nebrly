@@ -133,7 +133,7 @@ class _NaibrlyRequestBottomSheetContentState extends State<_NaibrlyRequestBottom
                               setState(() => isLocationEnabled = value);
                               widget.onLocationChanged?.call(value);
                             },
-                            activeColor: const Color(0xFF0E7A60),
+                            activeThumbColor: const Color(0xFF0E7A60),
                           ),
                         ],
                       ),

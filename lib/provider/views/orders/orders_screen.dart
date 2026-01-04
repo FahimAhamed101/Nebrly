@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 import 'package:get/get_state_manager/src/simple/get_state.dart';
-import 'package:provider/provider.dart';
 import '../../controllers/orders_controller.dart';
 import '../../models/order.dart';
-import '../../viewmodels/orders_viewmodel.dart' hide OrderFilter;
 import '../../widgets/orders/order_card.dart';
 import '../../widgets/orders/filter_tabs.dart';
 import 'package:naibrly/widgets/payment_confirmation_bottom_sheet.dart';

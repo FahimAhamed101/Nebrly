@@ -186,7 +186,7 @@ class _PayoutInformationScreenState extends State<PayoutInformationScreen> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: _selectedBank.isEmpty ? null : _selectedBank,
+          initialValue: _selectedBank.isEmpty ? null : _selectedBank,
           decoration: InputDecoration(
             hintText: "Choose your bank",
             border: OutlineInputBorder(

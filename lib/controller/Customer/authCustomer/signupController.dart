@@ -86,7 +86,7 @@ class SignUpController extends GetxController {
     do {
       final targetPath = file.path.replaceFirst(
         RegExp(r'\.(jpg|jpeg|png|webp|heic)$'),
-        '_compressed_${quality}.jpg',
+        '_compressed_$quality.jpg',
       );
 
       final result = await FlutterImageCompress.compressAndGetFile(
@@ -162,7 +162,7 @@ class SignUpController extends GetxController {
         "Could not compress image below 100KB. Please select a smaller image.",
         backgroundColor: Colors.red,
         colorText: Colors.white,
-        duration: Duration(seconds: 4),
+        duration: const Duration(seconds: 4),
       );
       return null;
     }
@@ -244,7 +244,7 @@ class SignUpController extends GetxController {
 
         final role = data['data']['user']['role'];
         await TokenService().saveUserRole(role);
-        Navigator.push(context, MaterialPageRoute(builder: (context) => BottomMenuWrappers()),);
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const BottomMenuWrappers()),);
         await TokenService().saveToken(token);
 
         showSuccess(context,"Account created successfully!",);
@@ -261,7 +261,7 @@ class SignUpController extends GetxController {
   void showError(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: TextStyle(color: Colors.white)),
+        content: Text(message, style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.red,
       ),
     );
@@ -269,7 +269,7 @@ class SignUpController extends GetxController {
   void showSuccess(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: TextStyle(color: Colors.white)),
+        content: Text(message, style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.green,
       ),
     );

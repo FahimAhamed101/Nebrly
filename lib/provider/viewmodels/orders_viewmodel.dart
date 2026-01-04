@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/order.dart';
 
 class OrdersViewModel extends ChangeNotifier {
-  List<Order> _allOrders = Order.getAllDemoOrders();
+  final List<Order> _allOrders = Order.getAllDemoOrders();
   OrderFilter _currentFilter = OrderFilter.open;
   List<Order> _filteredOrders = [];
 

@@ -58,7 +58,7 @@ class _OtpScreenState extends State<OtpScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 20),
-            AppText(
+            const AppText(
               "Authentication Code",
               fontSize: 24,
               fontWeight: FontWeight.w600,
@@ -78,7 +78,7 @@ class _OtpScreenState extends State<OtpScreen> {
                   ),
                   TextSpan(
                     text: widget.email, // Use the actual email
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w500,
                     ),
@@ -154,7 +154,7 @@ class _OtpScreenState extends State<OtpScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        AppText(
+        const AppText(
           "Didn't get the code?",
           fontSize: 15,
           fontWeight: FontWeight.w400,
@@ -178,7 +178,7 @@ class _OtpScreenState extends State<OtpScreen> {
                       controller.resendOtp(widget.email);
                       controller.startTimer();
                     },
-                    child: AppText(
+                    child: const AppText(
                       "Resend",
                       fontSize: 14,
                       fontWeight: FontWeight.w600,

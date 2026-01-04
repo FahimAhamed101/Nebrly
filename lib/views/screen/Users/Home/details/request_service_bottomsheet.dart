@@ -9,10 +9,10 @@ class RequestServiceBottomSheet extends StatefulWidget {
   final String providerName;
 
   const RequestServiceBottomSheet({
-    Key? key,
+    super.key,
     required this.serviceName,
     required this.providerName,
-  }) : super(key: key);
+  });
 
   @override
   State<RequestServiceBottomSheet> createState() => _RequestServiceBottomSheetState();

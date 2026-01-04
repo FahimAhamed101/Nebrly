@@ -91,7 +91,7 @@ class _UserQuickChatsScreenState extends State<UserQuickChatsScreen> {
     return await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: AppText(
+        title: const AppText(
           'Delete Message',
           fontSize: 18,
           fontWeight: FontWeight.w600,
@@ -106,7 +106,7 @@ class _UserQuickChatsScreenState extends State<UserQuickChatsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: AppText(
+            child: const AppText(
               'Cancel',
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -116,7 +116,7 @@ class _UserQuickChatsScreenState extends State<UserQuickChatsScreen> {
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: AppText(
+            child: const AppText(
               'Delete',
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -152,7 +152,7 @@ class _UserQuickChatsScreenState extends State<UserQuickChatsScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
-        title: AppText(
+        title: const AppText(
           'Quick Chats',
           fontSize: 20,
           fontWeight: FontWeight.bold,
@@ -194,14 +194,14 @@ class _UserQuickChatsScreenState extends State<UserQuickChatsScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          AppText(
+          const AppText(
             'No Quick Messages',
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: AppColors.DarkGray,
           ),
           const SizedBox(height: 8),
-          AppText(
+          const AppText(
             'Add your first quick message to get started',
             fontSize: 14,
             fontWeight: FontWeight.w400,
@@ -218,7 +218,7 @@ class _UserQuickChatsScreenState extends State<UserQuickChatsScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: AppText(
+            child: const AppText(
               'Add First Message',
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -267,12 +267,12 @@ class _UserQuickChatsScreenState extends State<UserQuickChatsScreen> {
                 }
               },
               itemBuilder: (context) => [
-                PopupMenuItem(
+                const PopupMenuItem(
                   value: 'send',
                   child: Row(
                     children: [
                       Icon(Icons.send, size: 20, color: AppColors.primary),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       AppText(
                         'Send Now',
                         fontSize: 14,
@@ -282,12 +282,12 @@ class _UserQuickChatsScreenState extends State<UserQuickChatsScreen> {
                     ],
                   ),
                 ),
-                PopupMenuItem(
+                const PopupMenuItem(
                   value: 'edit',
                   child: Row(
                     children: [
-                      const Icon(Icons.edit, size: 20),
-                      const SizedBox(width: 8),
+                      Icon(Icons.edit, size: 20),
+                      SizedBox(width: 8),
                       AppText(
                         'Edit',
                         fontSize: 14,
@@ -297,12 +297,12 @@ class _UserQuickChatsScreenState extends State<UserQuickChatsScreen> {
                     ],
                   ),
                 ),
-                PopupMenuItem(
+                const PopupMenuItem(
                   value: 'delete',
                   child: Row(
                     children: [
-                      const Icon(Icons.delete, size: 20, color: Colors.red),
-                      const SizedBox(width: 8),
+                      Icon(Icons.delete, size: 20, color: Colors.red),
+                      SizedBox(width: 8),
                       AppText(
                         'Delete',
                         fontSize: 14,

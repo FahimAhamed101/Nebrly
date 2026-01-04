@@ -89,7 +89,7 @@ class _CancelRequestBottomSheetState extends State<CancelRequestBottomSheet> {
                 const SizedBox(height: 24),
                 
                 // Title
-                AppText(
+                const AppText(
                   'Are you sure!',
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -98,7 +98,7 @@ class _CancelRequestBottomSheetState extends State<CancelRequestBottomSheet> {
                 const SizedBox(height: 8),
                 
                 // Subtitle
-                AppText(
+                const AppText(
                   'you want to cancel this order?',
                   fontSize: 16,
                   fontWeight: FontWeight.w400,
@@ -110,7 +110,7 @@ class _CancelRequestBottomSheetState extends State<CancelRequestBottomSheet> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AppText(
+                    const AppText(
                       'Note why*',
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
@@ -152,7 +152,7 @@ class _CancelRequestBottomSheetState extends State<CancelRequestBottomSheet> {
                     onPressed: () {
                       if (_reasonController.text.trim().isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
+                          const SnackBar(
                             content: AppText(
                               'Please provide a reason for cancellation',
                               fontSize: 14,
@@ -176,7 +176,7 @@ class _CancelRequestBottomSheetState extends State<CancelRequestBottomSheet> {
                       ),
                       elevation: 0,
                     ),
-                    child: AppText(
+                    child: const AppText(
                       'Cancelled',
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

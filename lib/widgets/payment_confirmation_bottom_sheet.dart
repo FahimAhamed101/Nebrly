@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:naibrly/utils/app_colors.dart';
 import 'package:naibrly/views/base/AppText/appText.dart';
 import 'package:naibrly/provider/models/order.dart';
-import 'package:naibrly/widgets/naibrly_now_bottom_sheet.dart';
+import 'package:naibrly/widgets/naibrly_now_bottom_sheetold.dart';
 import 'package:naibrly/provider/screens/order_inbox_screen.dart';
 import 'package:naibrly/views/base/pickers/custom_date_picker.dart';
 import 'package:naibrly/views/base/pickers/custom_time_picker.dart';
@@ -88,7 +88,7 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
         if (widget.topIcon != null) ...[
           GestureDetector(
             onTap: widget.isTopIconClickable ? () => Navigator.of(context).pop() : null,
-            child: Container(
+            child: SizedBox(
               width: 48,
               height: 48,
               child: widget.topIcon,
@@ -143,7 +143,7 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
                 const SizedBox(height: 16),
               ],
 
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               
               // Title (optional)
               if (widget.title.trim().isNotEmpty) ...[
@@ -171,7 +171,7 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
               
               // Rating Section
               if (widget.showRating) ...[
-                AppText(
+                const AppText(
                   "Rate your experience",
                   color: AppColors.textcolor,
                   fontSize: 16,
@@ -205,7 +205,7 @@ class _CustomBottomSheetState extends State<CustomBottomSheet> {
               
               // Feedback Section
               if (widget.showFeedback) ...[
-                AppText(
+                const AppText(
                   "Share your feedback",
                   color: AppColors.textcolor,
                   fontSize: 16,
@@ -475,7 +475,7 @@ void showCancelRequestBottomSheet(BuildContext context, {ValueChanged<String>? o
     customContent: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText(
+        const AppText(
           'Note why*',
           fontSize: 14,
           fontWeight: FontWeight.w500,
@@ -649,7 +649,7 @@ void showRequestServiceBottomSheet(BuildContext context, {required String servic
         const SizedBox(height: 16),
         
         // Problem Field
-        AppText(
+        const AppText(
           'Problem*',
           fontSize: 14,
           fontWeight: FontWeight.w500,
@@ -682,7 +682,7 @@ void showRequestServiceBottomSheet(BuildContext context, {required String servic
         const SizedBox(height: 16),
         
         // Note Field
-        AppText(
+        const AppText(
           'Note',
           fontSize: 14,
           fontWeight: FontWeight.w500,
@@ -721,7 +721,7 @@ void showRequestServiceBottomSheet(BuildContext context, {required String servic
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText(
+                  const AppText(
                     'Date*',
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -773,7 +773,7 @@ void showRequestServiceBottomSheet(BuildContext context, {required String servic
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AppText(
+                  const AppText(
                     'Time*',
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -979,7 +979,7 @@ void showWithdrawBottomSheet(BuildContext context, {required VoidCallback onSucc
     customContent: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText(
+        const AppText(
           'Amount',
           fontSize: 16,
           fontWeight: FontWeight.w600,
@@ -1118,7 +1118,7 @@ void showCancelOrderBottomSheet(BuildContext context, {required String orderId, 
     customContent: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppText(
+        const AppText(
           'Reason for cancellation',
           fontSize: 16,
           fontWeight: FontWeight.w600,
@@ -1229,7 +1229,7 @@ void showOrderDetailsBottomSheet(BuildContext context, {required Map<String, dyn
             // Provider Image
             CircleAvatar(
               radius: 25,
-              backgroundImage: AssetImage("assets/images/jane.png"), // Default provider image
+              backgroundImage: const AssetImage("assets/images/jane.png"), // Default provider image
               backgroundColor: Colors.grey.shade300,
             ),
             const SizedBox(width: 12),
@@ -1245,14 +1245,14 @@ void showOrderDetailsBottomSheet(BuildContext context, {required Map<String, dyn
                     color: AppColors.Black,
                   ),
                   const SizedBox(height: 4),
-                  Row(
+                  const Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.star,
                         color: Colors.black,
                         size: 16,
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: 4),
                       AppText(
                         "5.0 (55 reviews)",
                         fontSize: 14,
@@ -1269,7 +1269,7 @@ void showOrderDetailsBottomSheet(BuildContext context, {required Map<String, dyn
         const SizedBox(height: 16),
         
         // Address
-        Row(
+        const Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AppText(
@@ -1278,7 +1278,7 @@ void showOrderDetailsBottomSheet(BuildContext context, {required Map<String, dyn
               fontWeight: FontWeight.w600,
               color: AppColors.Black,
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Expanded(
               child: AppText(
                 "123 Oak Street Springfield, IL 62704", // Default address
@@ -1292,7 +1292,7 @@ void showOrderDetailsBottomSheet(BuildContext context, {required Map<String, dyn
         const SizedBox(height: 8),
         
         // Date and Time
-        AppText(
+        const AppText(
           "Date: 18 Sep 2025 Time: 14:00", // Default date/time
           fontSize: 14,
           fontWeight: FontWeight.w400,
@@ -1399,7 +1399,7 @@ void showOrderCancellationBottomSheet(BuildContext context, {required Map<String
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 16),
-        AppText(
+        const AppText(
           'Note why*',
           fontSize: 16,
           fontWeight: FontWeight.w600,

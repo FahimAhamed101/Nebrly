@@ -15,14 +15,14 @@ class ProfileController extends GetxController {
     try {
       final response = await http.get(Uri.parse(url), headers: {
         'Accept': 'application/json',
-        'Authorization': 'Bearer ${await TokenService().getToken()}',
+        'Authorization': 'Bearer ${TokenService().getToken()}',
       });
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final userJson = data['data']['user'];
         final user = UserModel.fromJson(userJson);
-        print("Error fetching user data: ${data}");
+        print("Error fetching user data: $data");
         profileInfo.value = user;
         update();
       } else {

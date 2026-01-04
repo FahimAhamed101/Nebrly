@@ -1,14 +1,18 @@
-// widgets/profile/profile_header.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../models/user_model_provider.dart';
 import '../../controllers/ProviderProfileController.dart';
 
 class ProfileHeader extends StatelessWidget {
   final VoidCallback onWithdrawPressed;
 
+  // Add a parameter to control which image to show first
+  final bool showBusinessLogoFirst;
+
   const ProfileHeader({
     super.key,
     required this.onWithdrawPressed,
+    this.showBusinessLogoFirst = true, // Default to showing business logo first
   });
 
   @override
@@ -17,65 +21,34 @@ class ProfileHeader extends StatelessWidget {
 
     return Obx(() {
       final user = controller.user.value;
+      final hasBusinessLogo = user?.businessLogo != null && user!.businessLogo!.isNotEmpty;
+      final hasProfileImage = user?.profileImage != null && user!.profileImage!.isNotEmpty;
+
+      // Determine which image to show
+      final primaryImageUrl = showBusinessLogoFirst && hasBusinessLogo
+          ? user.businessLogo
+          : (hasProfileImage ? user.profileImage : null);
+
+      final secondaryImageUrl = showBusinessLogoFirst && hasBusinessLogo
+          ? (hasProfileImage ? user.profileImage : null)
+          : (hasBusinessLogo ? user.businessLogo : null);
 
       return Center(
         child: Column(
           children: [
-            // Profile Image with Edit Icon
-            Stack(
-              alignment: Alignment.bottomRight,
-              children: [
-                Container(
-                  width: 90,
-                  height: 90,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.grey[200],
-                    border: Border.all(
-                      color: Colors.green[300]!,
-                      width: 3,
-                    ),
-                  ),
-                  child: user?.profileImage != null
-                      ? ClipOval(
-                    child: Image.network(
-                      user!.profileImage!,
-                      width: 84,
-                      height: 84,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Center(
-                          child: Icon(
-                            Icons.person,
-                            size: 40,
-                            color: Colors.grey[500],
-                          ),
-                        );
-                      },
-                    ),
-                  )
-                      : Center(
-                    child: Icon(
-                      Icons.person,
-                      size: 40,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.edit,
-                    size: 16,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
-            ),
+            // Business Logo & Profile Image Stack
+            if (primaryImageUrl != null || secondaryImageUrl != null)
+              _buildImageStack(
+                context: context,
+                primaryImageUrl: primaryImageUrl,
+                secondaryImageUrl: secondaryImageUrl,
+                user: user,
+                showBusinessLogoFirst: showBusinessLogoFirst,
+              )
+            else
+            // Fallback when no images
+              _buildPlaceholderImage(context),
+
             const SizedBox(height: 15),
 
             // Business Name
@@ -102,20 +75,36 @@ class ProfileHeader extends StatelessWidget {
                 ),
               ),
 
-            // Email (if business name not available)
-            if ((user?.businessNameRegistered == null || user!.businessNameRegistered!.isEmpty) && user?.email != null)
-              const SizedBox(height: 5),
-            if ((user?.businessNameRegistered == null || user!.businessNameRegistered!.isEmpty) && user?.email != null)
-              Text(
-                user!.email,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                  fontSize: 14,
+            // Show image indicator if both logo and profile image exist
+            if (hasBusinessLogo && hasProfileImage)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green[50],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            showBusinessLogoFirst ? Icons.business : Icons.person,
+                            size: 12,
+                            color: Colors.green[600],
+                          ),
+                          const SizedBox(width: 4),
+
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
 
+            // Rest of your existing code...
             const SizedBox(height: 15),
 
             // Balance and Withdraw Button
@@ -155,7 +144,7 @@ class ProfileHeader extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
 
-                // Withdraw Button (only show if can withdraw)
+                // Withdraw Button
                 if (controller.canWithdraw)
                   ElevatedButton(
                     onPressed: onWithdrawPressed,
@@ -180,7 +169,7 @@ class ProfileHeader extends StatelessWidget {
               ],
             ),
 
-            // Pending Balance (show below if exists)
+            // Pending Balance
             if ((user?.pendingPayout ?? 0) > 0) ...[
               const SizedBox(height: 12),
               Container(
@@ -218,5 +207,138 @@ class ProfileHeader extends StatelessWidget {
         ),
       );
     });
+  }
+
+  // Helper method to build the image stack
+  Widget _buildImageStack({
+    required BuildContext context,
+    required String? primaryImageUrl,
+    required String? secondaryImageUrl,
+    required UserModel? user,
+    required bool showBusinessLogoFirst,
+  }) {
+    return Stack(
+      alignment: Alignment.bottomRight,
+      children: [
+        // Primary Image (Business Logo or Profile)
+        Container(
+          width: 90,
+          height: 90,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.grey[200],
+            border: Border.all(
+              color: Colors.green[300]!,
+              width: 3,
+            ),
+          ),
+          child: ClipOval(
+            child: Image.network(
+              primaryImageUrl!,
+              width: 84,
+              height: 84,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                // Fallback to secondary image if primary fails
+                return secondaryImageUrl != null
+                    ? Image.network(
+                  secondaryImageUrl,
+                  width: 84,
+                  height: 84,
+                  fit: BoxFit.cover,
+                )
+                    : _buildPlaceholderIcon();
+              },
+            ),
+          ),
+        ),
+
+        // Secondary Image Badge (if both images exist)
+        if (secondaryImageUrl != null)
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.green[300]!,
+                  width: 2,
+                ),
+              ),
+              child: ClipOval(
+                child: Image.network(
+                  secondaryImageUrl,
+                  width: 28,
+                  height: 28,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                      child: Icon(
+                        showBusinessLogoFirst ? Icons.person : Icons.business,
+                        size: 14,
+                        color: Colors.grey[500],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+
+        // Edit Icon
+
+      ],
+    );
+  }
+
+  // Placeholder when no images
+  Widget _buildPlaceholderImage(BuildContext context) {
+    return Container(
+      width: 90,
+      height: 90,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.grey[200],
+        border: Border.all(
+          color: Colors.green[300]!,
+          width: 3,
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.business,
+              size: 30,
+              color: Colors.grey[500],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "No Logo",
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Fallback icon
+  Widget _buildPlaceholderIcon() {
+    return Center(
+      child: Icon(
+        Icons.person,
+        size: 40,
+        color: Colors.grey[500],
+      ),
+    );
   }
 }

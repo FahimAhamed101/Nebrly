@@ -4,7 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../models/user_model_provider.dart' show UserModel;
 import '../services/profile_api_service.dart';
 
-class ProfileController extends GetxController {
+class UpdateprofileController extends GetxController {
   final ProfileApiService _apiService = Get.find<ProfileApiService>();
   final ImagePicker _picker = ImagePicker();
 
@@ -13,6 +13,7 @@ class ProfileController extends GetxController {
   final RxString error = ''.obs;
   final RxBool isRefreshing = false.obs;
   final Rx<File?> businessLogo = Rx<File?>(null);
+  final RxBool isUpdating = false.obs;
 
   @override
   void onInit() {
@@ -26,6 +27,10 @@ class ProfileController extends GetxController {
       error.value = '';
       final userData = await _apiService.getProfile();
       user.value = userData;
+      // Debug print to see what data is loaded
+      print('Loaded user: ${user.value?.firstName} ${user.value?.lastName}');
+      print('Business name: ${user.value?.businessNameRegistered}');
+      print('Services count: ${user.value?.servicesProvided.length}');
     } catch (e) {
       error.value = e.toString();
       Get.snackbar(
@@ -91,7 +96,7 @@ class ProfileController extends GetxController {
     List<Map<String, dynamic>>? servicesToAdd,
   }) async {
     try {
-      isLoading.value = true;
+      isUpdating.value = true;
       error.value = '';
 
       final success = await _apiService.updateProviderProfile(
@@ -117,6 +122,7 @@ class ProfileController extends GetxController {
           'Profile updated successfully',
           snackPosition: SnackPosition.BOTTOM,
           duration: const Duration(seconds: 2),
+
         );
         return true;
       }
@@ -128,10 +134,11 @@ class ProfileController extends GetxController {
         'Failed to update profile: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
         duration: const Duration(seconds: 3),
+
       );
       return false;
     } finally {
-      isLoading.value = false;
+      isUpdating.value = false;
     }
   }
 

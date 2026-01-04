@@ -9,7 +9,7 @@ class IosStyleBottomNavigations extends StatelessWidget {
   final ValueChanged<int> onTap;
   final String? userRole; // Add userRole parameter
 
-  IosStyleBottomNavigations({
+  const IosStyleBottomNavigations({
     super.key,
     required this.currentIndex,
     required this.onTap,
@@ -60,7 +60,7 @@ class IosStyleBottomNavigations extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.transparent,
-        borderRadius: BorderRadius.only(
+        borderRadius: const BorderRadius.only(
           topRight: Radius.circular(36),
           topLeft: Radius.circular(36),
         ),
@@ -73,7 +73,7 @@ class IosStyleBottomNavigations extends StatelessWidget {
         child: Container(
           color: Colors.transparent,
           height: 80,
-          padding: EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(
@@ -100,7 +100,7 @@ class IosStyleBottomNavigations extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -115,7 +115,7 @@ class IosStyleBottomNavigations extends StatelessWidget {
                 color: _getColor(index),
               ),
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             AnimatedDefaultTextStyle(
               curve: Curves.fastOutSlowIn,
               duration: const Duration(milliseconds: 200),

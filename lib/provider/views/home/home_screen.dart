@@ -26,7 +26,7 @@ class ProviderHomeScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     // Provider header (always show)
-                    ProviderHeader(),
+                    const ProviderHeader(),
 
                     // Loading state
                     Obx(() {

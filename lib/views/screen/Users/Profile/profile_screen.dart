@@ -24,7 +24,7 @@ import 'base/iconTextRow.dart';
 import 'base/settingItem.dart';
 
 class ProfileScreen extends StatefulWidget {
-  ProfileScreen({super.key});
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -48,7 +48,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
         backgroundColor: AppColors.White,
         appBar: AppBar(
-          systemOverlayStyle: SystemUiOverlayStyle(
+          systemOverlayStyle: const SystemUiOverlayStyle(
             statusBarIconBrightness: Brightness.dark,
             statusBarBrightness: Brightness.light,
           ),
@@ -56,7 +56,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           elevation: 0,
           automaticallyImplyLeading: false,
           titleSpacing: 20,
-          title: AppText("Your Profile",fontSize: 18,fontWeight: FontWeight.w700,color: AppColors.Black,),
+          title: const AppText("Your Profile",fontSize: 18,fontWeight: FontWeight.w700,color: AppColors.Black,),
           centerTitle: false,
           actions: [
             Padding(
@@ -91,8 +91,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             return <Widget>[];
           },
           body: SingleChildScrollView(
-            physics: BouncingScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: 18),
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -100,7 +100,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Obx(()=>Align(
                   alignment: Alignment.center,
                   child: CustomNetworkImage(
-                    imageUrl:"${controller.profileInfo.value!.profileImage.url}",
+                    imageUrl:controller.profileInfo.value!.profileImage.url,
                     height: 130,
                     width: 130,
                     boxShape: BoxShape.circle,
@@ -119,16 +119,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: AppColors.Black,
                 )),
 
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
 
-                AppText(
+                const AppText(
                     "Home owner",
                     fontSize: 11,
                     fontWeight: FontWeight.w400,
                     color: AppColors.Black
                 ),
                 SizedBox(height: MediaQuery.of(context).size.height *0.05),
-                Align(
+                const Align(
                   alignment: Alignment.topLeft,
                   child: AppText(
                       'My Information',
@@ -143,7 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    AppText(
+                    const AppText(
                       'Notifications',
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -161,11 +161,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const Divider(color: Color(0xFFEEEEEE)),
 
-                SizedBox(height: 5),
+                const SizedBox(height: 5),
                 ListView.builder(
                   itemCount: settingItem.length,
                   shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
+                  physics: const NeverScrollableScrollPhysics(),
                   itemBuilder: (context, index) {
                     final items = settingItem[index];
                     return SettingItem(
@@ -174,16 +174,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       onTap: () {
                         switch(index){
                           case 0:
-                            Navigator.push(context,MaterialPageRoute(builder: (builder)=>FaqScreen()));
+                            Navigator.push(context,MaterialPageRoute(builder: (builder)=>const FaqScreen()));
                             break;
                           case 1:
-                            Navigator.push(context,MaterialPageRoute(builder: (builder)=>PrivacyPolicyScreen()));
+                            Navigator.push(context,MaterialPageRoute(builder: (builder)=>const PrivacyPolicyScreen()));
                             break;
                           case 2:
-                            Navigator.push(context,MaterialPageRoute(builder: (builder)=>TermsConditionScreen()));
+                            Navigator.push(context,MaterialPageRoute(builder: (builder)=>const TermsConditionScreen()));
                             break;
                           case 3:
-                            Navigator.push(context,MaterialPageRoute(builder: (builder)=>PaymentHistoryScreen()));
+                            Navigator.push(context,MaterialPageRoute(builder: (builder)=>const PaymentHistoryScreen()));
                             break;
                         }
                       },
@@ -191,12 +191,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   },
                 ),
 
-                SizedBox(height: 5),
+                const SizedBox(height: 5),
                 IosTapEffect(
                   onTap: () async {
                     showCustomDialog(context);
                   },
-                  child: Align(
+                  child: const Align(
                     alignment: Alignment.topLeft,
                     child: AppText(
                         'Logout',
@@ -215,11 +215,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Padding aboutSections() {
     return Padding(
-      padding: EdgeInsets.only(left: 5),
+      padding: const EdgeInsets.only(left: 5),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
 
           Obx(()=>  IconTextRow(
             iconPath: AppIcons.men,
@@ -227,14 +227,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),),
 
 
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
 
           IconTextRow(
             iconPath: AppIcons.men,
             text: 'Home owner',
           ),
 
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Obx(() {
             final address = controller.profileInfo.value?.address;
             final addressText = address != null
@@ -247,26 +247,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
             );
           }),
 
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Obx(()=>IconTextRow(
             iconPath: AppIcons.call,
             text: controller.profileInfo.value!.phone,
           ),),
 
 
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Obx(()=> IconTextRow(
             iconPath: AppIcons.mail,
             text: controller.profileInfo.value!.email,
           )),
 
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           IconTextRow(
             iconPath: AppIcons.mail,
             text: 'Zip: 62704',
           ),
 
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Obx(() {
             final createdAt = controller.profileInfo.value?.createdAt;
             String dateText = createdAt != null
@@ -307,11 +307,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       alignment: Alignment.topRight,
                       child: SvgPicture.asset("assets/icons/maki_cross.svg")),
                 ),
-                Align(
+                const Align(
                     alignment: Alignment.topLeft,
                     child:AppText("Log Out",color: AppColors.Black,fontSize: 20,fontWeight: FontWeight.bold,)),
-                SizedBox(height: 8),
-                Text(
+                const SizedBox(height: 8),
+                const Text(
                   "Are you sure you want to log out your account?",
                   style: TextStyle(
                     fontSize: 14,
@@ -338,7 +338,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           alignment: Alignment.center,
-                          child: Row(
+                          child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -372,7 +372,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           alignment: Alignment.center,
-                          child: Row(
+                          child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -391,7 +391,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ],
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
               ],
             ),
           ),
@@ -413,7 +413,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // await _tokenService.clearAll();
 
       // Navigate to login/welcome screen
-      Get.offAll(() => WelcomeScreen()); // Replace with your actual login/welcome screen
+      Get.offAll(() => const WelcomeScreen()); // Replace with your actual login/welcome screen
 
       // Show success message
       Get.snackbar(

@@ -16,7 +16,7 @@ class PrimaryButton extends StatelessWidget {
   final bool loading; // ✅ add loading
 
   const PrimaryButton({
-    Key? key,
+    super.key,
     required this.text,
     required this.onTap,
     this.backgroundColor,
@@ -26,7 +26,7 @@ class PrimaryButton extends StatelessWidget {
     this.fontWeight = FontWeight.w500,
     this.fontSize = 16,
     this.loading = false, // default false
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +40,7 @@ class PrimaryButton extends StatelessWidget {
         ),
         child: Center(
           child: loading
-              ? SizedBox(
+              ? const SizedBox(
             width: 20,
             height: 20,
             child: CupertinoActivityIndicator(),

@@ -5,14 +5,14 @@ import '../models/analytics.dart';
 import '../models/client_feedback.dart';
 
 class HomeViewModel extends ChangeNotifier {
-  ProviderProfile _providerProfile = ProviderProfile.demo();
+  final ProviderProfile _providerProfile = ProviderProfile.demo();
   List<ServiceRequest> _activeRequests = [];
   List<ServiceRequest> _acceptedRequests = [];
-  Analytics _analytics = Analytics.demo();
+  final Analytics _analytics = Analytics.demo();
 
-  List<ClientFeedback> _clientFeedback = [];
+  final List<ClientFeedback> _clientFeedback = [];
   int _currentPhase = 0; // 0: detailed pending, 1: team pending, 2: accepted list
-  int _feedbackPage = 0;
+  final int _feedbackPage = 0;
   static const int _feedbackPageSize = 3;
 
   // Getters
@@ -102,7 +102,8 @@ class HomeViewModel extends ChangeNotifier {
   }
 
 
-    notifyListeners();
+    @override
+  notifyListeners();
   }
 
 

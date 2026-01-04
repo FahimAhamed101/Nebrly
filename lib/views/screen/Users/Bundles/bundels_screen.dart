@@ -101,7 +101,7 @@ class _BundelsScreenState extends State<BundelsScreen> {
                                 border: InputBorder.none,
                                 isCollapsed: true,
                               ),
-                              style: TextStyle(color: AppColors.textcolor),
+                              style: const TextStyle(color: AppColors.textcolor),
                             ),
                           ),
                           Container(
@@ -124,14 +124,14 @@ class _BundelsScreenState extends State<BundelsScreen> {
                                   color: AppColors.black.withOpacity(0.50),
                                 ),
                               ),
-                              style: TextStyle(color: AppColors.textcolor),
+                              style: const TextStyle(color: AppColors.textcolor),
                             ),
                           ),
                           Container(
                             width: 45,
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               color: AppColors.primary,
-                              borderRadius: const BorderRadius.only(
+                              borderRadius: BorderRadius.only(
                                 topRight: Radius.circular(12),
                                 bottomRight: Radius.circular(12),
                               ),

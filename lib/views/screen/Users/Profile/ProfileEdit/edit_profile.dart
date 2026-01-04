@@ -16,7 +16,7 @@ import '../../../../base/appTextfield/appTextfield.dart';
 import '../../../../base/primaryButton/primary_button.dart';
 
 class EditProfileScreen extends StatefulWidget {
-  EditProfileScreen({super.key});
+  const EditProfileScreen({super.key});
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -88,7 +88,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.White,
       appBar: AppBar(
-        systemOverlayStyle: SystemUiOverlayStyle(
+        systemOverlayStyle: const SystemUiOverlayStyle(
           statusBarIconBrightness: Brightness.dark,
           statusBarBrightness: Brightness.light,
         ),
@@ -110,7 +110,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         automaticallyImplyLeading: false,
         titleSpacing: 20,
-        title: AppText(
+        title: const AppText(
           "Edit Profile",
           fontSize: 18,
           fontWeight: FontWeight.w600,
@@ -123,7 +123,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         },
         body: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -136,7 +136,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   children: [
                     Obx(() {
                       return Container(
-                        padding: EdgeInsets.all(5),
+                        padding: const EdgeInsets.all(5),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
@@ -192,7 +192,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
               SizedBox(height: MediaQuery.of(context).size.height * 0.01),
 
-              Align(
+              const Align(
                 alignment: Alignment.center,
                 child: AppText(
                   'Upload Profile Photo',
@@ -205,13 +205,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               SizedBox(height: MediaQuery.of(context).size.height * 0.03),
 
               /// First Name
-              AppText(
+              const AppText(
                 "First Name",
                 fontWeight: FontWeight.w600,
                 fontSize: 16,
                 color: AppColors.black,
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               AppTextField1(
                 controller: firstNameController,
                 hint: "John",
@@ -220,13 +220,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
               /// Last Name
-              AppText(
+              const AppText(
                 "Last Name",
                 fontWeight: FontWeight.w600,
                 fontSize: 16,
                 color: AppColors.black,
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               AppTextField1(
                 controller: lastNameController,
                 hint: "Doe",
@@ -235,24 +235,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
               /// Phone
-              AppText(
+              const AppText(
                 "Phone Number",
                 fontWeight: FontWeight.w500,
                 fontSize: 16,
                 color: AppColors.black,
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               IntlPhoneField(
                 controller: phoneController,
                 decoration: InputDecoration(
                   contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: AppColors.LightGray, width: 1),
+                    borderSide: const BorderSide(color: AppColors.LightGray, width: 1),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: AppColors.DarkGray, width: 1),
+                    borderSide: const BorderSide(color: AppColors.DarkGray, width: 1),
                   ),
                   focusedErrorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -268,13 +268,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
               /// Street Address
-              AppText(
+              const AppText(
                 "Street",
                 fontWeight: FontWeight.w500,
                 fontSize: 16,
                 color: AppColors.black,
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               AppTextField1(
                 controller: streetController,
                 hint: "789 Updated Street",
@@ -283,13 +283,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
               /// City
-              AppText(
+              const AppText(
                 "City",
                 fontWeight: FontWeight.w500,
                 fontSize: 16,
                 color: AppColors.black,
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               AppTextField1(
                 controller: cityController,
                 hint: "Updated City",
@@ -298,13 +298,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
               /// State
-              AppText(
+              const AppText(
                 "State",
                 fontWeight: FontWeight.w500,
                 fontSize: 16,
                 color: AppColors.black,
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               AppTextField1(
                 controller: stateController,
                 hint: "UC",
@@ -313,13 +313,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
               /// Zip Code
-              AppText(
+              const AppText(
                 "Zip Code",
                 fontWeight: FontWeight.w500,
                 fontSize: 16,
                 color: AppColors.black,
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               AppTextField1(
                 keyboardType: TextInputType.number,
                 controller: zipCodeController,
@@ -329,13 +329,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
               /// Apartment/Suite
-              AppText(
+              const AppText(
                 "Apartment/Suite",
                 fontWeight: FontWeight.w500,
                 fontSize: 16,
                 color: AppColors.black,
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               AppTextField1(
                 controller: aptSuiteController,
                 hint: "Suite 100",

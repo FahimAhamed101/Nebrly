@@ -102,7 +102,7 @@ class ServiceRequestCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              AppText(
+              const AppText(
                 " : ",
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -159,7 +159,7 @@ class ServiceRequestCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppText(
+              const AppText(
                 'Address: ',
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -200,7 +200,7 @@ class ServiceRequestCard extends StatelessWidget {
 
           // Problem note
           if (problemNote != null && problemNote!.isNotEmpty) ...[
-            AppText(
+            const AppText(
               'Problem Note',
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -229,12 +229,12 @@ class ServiceRequestCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: const Color(0xFFF34F4F), width: 1),
                     ),
-                    child: Center(
+                    child: const Center(
                       child: AppText(
                         'Cancel',
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: const Color(0xFFF34F4F),
+                        color: Color(0xFFF34F4F),
                       ),
                     ),
                   ),
@@ -250,7 +250,7 @@ class ServiceRequestCard extends StatelessWidget {
                       color: AppColors.primary,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Center(
+                    child: const Center(
                       child: AppText(
                         'Accept',
                         fontSize: 14,
@@ -281,7 +281,7 @@ class ServiceRequestCard extends StatelessWidget {
             height: 40,
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
-              return Icon(
+              return const Icon(
                 Icons.person,
                 color: AppColors.primary,
                 size: 20,
@@ -315,7 +315,7 @@ class ServiceRequestCard extends StatelessWidget {
             debugPrint('Failed to load asset image: $exception');
           },
           child: clientImage.contains('default_avatar.png')
-              ? Icon(
+              ? const Icon(
             Icons.person,
             color: AppColors.primary,
             size: 20,
@@ -327,7 +327,7 @@ class ServiceRequestCard extends StatelessWidget {
         return CircleAvatar(
           radius: 20,
           backgroundColor: AppColors.primary.withOpacity(0.1),
-          child: Icon(
+          child: const Icon(
             Icons.person,
             color: AppColors.primary,
             size: 20,

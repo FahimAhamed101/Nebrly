@@ -8,7 +8,7 @@ class SocketController extends GetxController {
   static SocketController get instance => Get.find<SocketController>();
 
   final SocketService _socketService = SocketService.instance;
-
+  Stream<Map<String, dynamic>> get messageStream => _socketService.messageStream;
   final RxMap<String, List<Map<String, dynamic>>> _messages = <String, List<Map<String, dynamic>>>{}.obs;
   final RxMap<String, bool> _typingStatus = <String, bool>{}.obs;
   final RxMap<String, int> _unreadCounts = <String, int>{}.obs;
@@ -32,7 +32,7 @@ class SocketController extends GetxController {
   final _messagesChangeController = StreamController<void>.broadcast();
   Stream<void> get messagesChangeStream => _messagesChangeController.stream;
 
-  List<StreamSubscription> _subscriptions = [];
+  final List<StreamSubscription> _subscriptions = [];
 
   @override
   void onInit() {

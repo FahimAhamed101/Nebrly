@@ -14,7 +14,7 @@ import '../Users/auth/base/countryTextfield.dart';
 
 
 class SignUp extends StatefulWidget {
-  SignUp({super.key});
+  const SignUp({super.key});
 
   @override
   State<SignUp> createState() => _SignUpState();
@@ -37,16 +37,16 @@ class _SignUpState extends State<SignUp> {
         padding: const EdgeInsets.symmetric(horizontal: 18.0),
         child: Column(
           children: [
-            SizedBox(height: 45),
+            const SizedBox(height: 45),
             Align(
               alignment: Alignment.center,
               child: Image.asset("assets/images/Frame 2147226486.png", width: 155, height: 48),
             ),
-            SizedBox(height: 25),
+            const SizedBox(height: 25),
 
             // Role Selection
             _buildRoleSelection(),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
             // Profile Image
             Row(
@@ -68,23 +68,23 @@ class _SignUpState extends State<SignUp> {
                     ),
                   ),
                 )),
-                SizedBox(width: 8),
-                UploadImage(),
+                const SizedBox(width: 8),
+                const UploadImage(),
               ],
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
 
             // Personal Information
             Row(
               children: [
                 Expanded(child: AppTextField(controller: controller.firstname, hint: "First Name")),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
                 Expanded(child: AppTextField(controller: controller.lastname, hint: "Last Name")),
               ],
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             AppTextField(controller: controller.emailController, hint: "Email Address"),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Obx(() => AppTextField(
               obscure: !controller.showHide.value,
               keyboardType: TextInputType.text,
@@ -102,7 +102,7 @@ class _SignUpState extends State<SignUp> {
                 },
               ),
             )),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Obx(() => AppTextField(
               obscure: !controller.showHide1.value,
               keyboardType: TextInputType.text,
@@ -120,7 +120,7 @@ class _SignUpState extends State<SignUp> {
                 },
               ),
             )),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
             // Provider-specific fields
             Obx(() {
@@ -128,42 +128,42 @@ class _SignUpState extends State<SignUp> {
                 return Column(
                   children: [
                     AppTextField(controller: controller.businessName, hint: "Business Name"),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     AppTextField(controller: controller.providerRole, hint: "Service Role (e.g., Plumber, Electrician)"),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     AppTextField(controller: controller.experience, hint: "Years of Experience", keyboardType: TextInputType.number),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                     AppTextField(controller: controller.serviceDescription, hint: "Service Description"),
-                    SizedBox(height: 10),
+                    const SizedBox(height: 10),
                   ],
                 );
               }
-              return SizedBox();
+              return const SizedBox();
             }),
 
             CustomCountryCodePicker(
               countryCodeController: controller.phoneNumber,
               initialCountryCode: "",
             ),
-            SizedBox(height: 5),
+            const SizedBox(height: 5),
             AppTextField(controller: controller.streetName, hint: "Street Number and Name"),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(child: AppTextField(controller: controller.state, hint: "State")),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
                 Expanded(child: AppTextField(controller: controller.zipCode, hint: "Zip Code", keyboardType: TextInputType.number)),
               ],
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(child: AppTextField(controller: controller.city, hint: "City")),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
                 Expanded(child: AppTextField(controller: controller.aptSuite, hint: "Apt / Suite")),
               ],
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
 
             // Terms and Conditions
             Row(
@@ -196,10 +196,10 @@ class _SignUpState extends State<SignUp> {
                         fontSize: 14,
                       ),
                       children: [
-                        TextSpan(text: "I agree to the ", style: TextStyle(fontWeight: FontWeight.w500, color: AppColors.black)),
+                        const TextSpan(text: "I agree to the ", style: TextStyle(fontWeight: FontWeight.w500, color: AppColors.black)),
                         TextSpan(
                           text: "Terms of Service & Privacy Policy",
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w500,
                             decoration: TextDecoration.underline,
@@ -215,7 +215,7 @@ class _SignUpState extends State<SignUp> {
                 ),
               ],
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
             // Sign Up Button
             Obx(() {
@@ -231,20 +231,20 @@ class _SignUpState extends State<SignUp> {
                 },
               );
             }),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             orDivided(),
-            SizedBox(height: 18),
+            const SizedBox(height: 18),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
                   height: 50,
                   width: 50,
-                  padding: EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     boxShadow: [
-                      BoxShadow(
+                      const BoxShadow(
                         color: Color(0xffeeeeee),
                         offset: Offset(0, 3),
                         blurRadius: 5,
@@ -254,15 +254,15 @@ class _SignUpState extends State<SignUp> {
                   ),
                   child: SvgPicture.asset(AppIcons.google),
                 ),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
                 Container(
                   height: 50,
                   width: 50,
-                  padding: EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     boxShadow: [
-                      BoxShadow(
+                      const BoxShadow(
                         color: Color(0xffeeeeee),
                         offset: Offset(0, 3),
                         blurRadius: 5,
@@ -282,7 +282,7 @@ class _SignUpState extends State<SignUp> {
 
   Widget _buildRoleSelection() {
     return Container(
-      padding: EdgeInsets.all(8),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
 
         borderRadius: BorderRadius.circular(12),
@@ -294,7 +294,7 @@ class _SignUpState extends State<SignUp> {
             child: Obx(() => GestureDetector(
               onTap: () => controller.setUserRole('customer'),
               child: Container(
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 decoration: BoxDecoration(
                   color: controller.userRole.value == 'customer'
                       ? AppColors.primary
@@ -315,12 +315,12 @@ class _SignUpState extends State<SignUp> {
               ),
             )),
           ),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
           Expanded(
             child: Obx(() => GestureDetector(
               onTap: () => controller.setUserRole('provider'),
               child: Container(
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 decoration: BoxDecoration(
                   color: controller.userRole.value == 'provider'
                       ? AppColors.primary
@@ -355,8 +355,8 @@ class _SignUpState extends State<SignUp> {
             color: AppColors.secondary,
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8.0),
           child: AppText("Or continue with", fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.black),
         ),
         Expanded(
@@ -382,7 +382,7 @@ class UploadImage extends StatelessWidget {
       },
       child: Container(
         height: 45,
-        padding: EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
@@ -393,12 +393,12 @@ class UploadImage extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AppText(
+            const AppText(
               "Upload Image",
               color: AppColors.black,
               fontSize: 14,
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             SvgPicture.asset("assets/icons/elements (4).svg"),
           ],
         ),

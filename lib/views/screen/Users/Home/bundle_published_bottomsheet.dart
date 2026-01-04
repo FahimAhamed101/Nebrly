@@ -55,7 +55,7 @@ class BundlePublishedBottomSheet extends StatelessWidget {
             const SizedBox(height: 8),
             
             // Subtitle
-            AppText(
+            const AppText(
               "share with friends and neighbors",
               fontSize: 14,
               fontWeight: FontWeight.w400,

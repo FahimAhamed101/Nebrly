@@ -98,7 +98,7 @@ class _AddQuickChatBottomSheetState extends State<AddQuickChatBottomSheet> {
                 width: 2,
               ),
             ),
-            child: Icon(
+            child: const Icon(
               Icons.add,
               color: AppColors.primary,
               size: 40,
@@ -108,7 +108,7 @@ class _AddQuickChatBottomSheetState extends State<AddQuickChatBottomSheet> {
           const SizedBox(height: 24),
           
           // Title
-          AppText(
+          const AppText(
             'Add Quick Chat',
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -118,7 +118,7 @@ class _AddQuickChatBottomSheetState extends State<AddQuickChatBottomSheet> {
           const SizedBox(height: 8),
           
           // Description
-          AppText(
+          const AppText(
             'Send preset messages to the provider for faster communication.',
             fontSize: 14,
             fontWeight: FontWeight.w400,
@@ -132,7 +132,7 @@ class _AddQuickChatBottomSheetState extends State<AddQuickChatBottomSheet> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AppText(
+              const AppText(
                 'Write answer',
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -156,7 +156,7 @@ class _AddQuickChatBottomSheetState extends State<AddQuickChatBottomSheet> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.primary, width: 2),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 2),
                   ),
                   contentPadding: const EdgeInsets.all(16),
                 ),
@@ -192,7 +192,7 @@ class _AddQuickChatBottomSheetState extends State<AddQuickChatBottomSheet> {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : AppText(
+                      : const AppText(
                           'Done',
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -219,12 +219,12 @@ class _AddQuickChatBottomSheetState extends State<AddQuickChatBottomSheet> {
                   },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
-                    side: BorderSide(color: AppColors.primary, width: 2),
+                    side: const BorderSide(color: AppColors.primary, width: 2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: AppText(
+                  child: const AppText(
                     'See All',
                     fontSize: 16,
                     fontWeight: FontWeight.bold,

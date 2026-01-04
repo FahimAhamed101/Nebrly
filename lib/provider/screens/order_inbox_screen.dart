@@ -372,12 +372,12 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFF0E7A60),
+                  color: Color(0xFF0E7A60),
                 ),
                 child: IconButton(
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.send,
                     color: Colors.white,
                     size: 20,
@@ -772,9 +772,9 @@ class _OrderInboxScreenState extends State<OrderInboxScreen> {
           Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF0E7A60),
+              color: Color(0xFF0E7A60),
             ),
             child: const Icon(
               Icons.access_time,

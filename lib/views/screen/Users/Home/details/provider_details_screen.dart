@@ -21,7 +21,7 @@ class ProviderDetailsScreen extends StatefulWidget {
   final String review;
 
   const ProviderDetailsScreen({
-    Key? key,
+    super.key,
     this.providerId,
     this.selectedServiceName,
     required this.providerName,
@@ -30,15 +30,15 @@ class ProviderDetailsScreen extends StatefulWidget {
     required this.location,
     required this.price,
     required this.review,
-  }) : super(key: key);
+  });
 
   @override
   State<ProviderDetailsScreen> createState() => _ProviderDetailsScreenState();
 }
 
 class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
-  List<ClientFeedback> _feedbackList = [];
-  bool _hasMoreFeedback = true;
+  final List<ClientFeedback> _feedbackList = [];
+  final bool _hasMoreFeedback = true;
   bool isLoadingProviderData = false;
   String errorMessage = '';
   Map<String, dynamic>? providerData;
@@ -332,10 +332,21 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
     return Center(
       child: ElevatedButton(
         onPressed: () {
+          if (widget.providerId == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Provider ID is missing'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            return;
+          }
+
           showNaibrlyNowBottomSheet(
             context,
             serviceName: displayServiceName,
             providerName: displayProviderName,
+            providerId: widget.providerId!, // Pass the providerId
           );
         },
         style: ElevatedButton.styleFrom(
@@ -394,7 +405,7 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
                 const SizedBox(height: 12),
               ],
             );
-          }).toList(),
+          }),
       ],
     );
   }
@@ -455,7 +466,7 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
                 color: AppColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: AppText(
+              child: const AppText(
                 'Current',
                 fontSize: 10,
                 fontWeight: FontWeight.w600,

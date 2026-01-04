@@ -26,12 +26,12 @@ class AppRoutes {
 
   static List<GetPage> pages = [
     GetPage(name: welcomeScreen, page: () => const WelcomeScreen()),
-    GetPage(name: authWrapper, page: () => AuthWrapper()),
-    GetPage(name: bottomMenuWrapper, page: () => BottomMenuWrappers()),
+    GetPage(name: authWrapper, page: () => const AuthWrapper()),
+    GetPage(name: bottomMenuWrapper, page: () => const BottomMenuWrappers()),
     GetPage(name: profileScreen, page: () => ProfileScreen()),
     GetPage(
         name: providerProfilePage,
-        page: () => ProviderProfilePage(),
+        page: () => const ProviderProfilePage(),
         transition: Transition.noTransition
     ),
 
@@ -39,7 +39,7 @@ class AppRoutes {
     GetPage(name: resetScreen, page: () => ResetScreen(), transition: Transition.noTransition),
     GetPage(name: loginScreen, page: () => LoginScreen(), transition: Transition.noTransition),
     GetPage(name: signUpScreen, page: () => SignUp(), transition: Transition.noTransition),
-    GetPage(name: providerHomeScreen, page: () => ProviderHomeScreen(), transition: Transition.noTransition),
-    GetPage(name: selectServiceAreaScreen, page: () => SelectServiceAreaScreen(), transition: Transition.noTransition),
+    GetPage(name: providerHomeScreen, page: () => const ProviderHomeScreen(), transition: Transition.noTransition),
+    GetPage(name: selectServiceAreaScreen, page: () => const SelectServiceAreaScreen(), transition: Transition.noTransition),
   ];
 }

@@ -111,7 +111,7 @@ class _FAQScreenState extends State<FAQScreen> {
               ),
             ),
           ),
-          SizedBox(height: 20)
+          const SizedBox(height: 20)
         ],
       ),
     );

@@ -31,10 +31,10 @@ class ConfirmInfoScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: KoreColors.border),
                 ),
-                child: SingleChildScrollView(
+                child: const SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text("LEGAL FULL NAME:", style: TextStyle(fontWeight: FontWeight.bold)),
                       Text("Jacob Meikle"),
                       SizedBox(height: 12),
@@ -62,12 +62,12 @@ class ConfirmInfoScreen extends StatelessWidget {
 
                           Chip(
                             backgroundColor: KoreColors.lightOrange,
-                            avatar: const Icon(
+                            avatar: Icon(
                               Icons.circle_outlined,
                               color: KoreColors.orange, // orange tone for icon
                               size: 12,
                             ),
-                            label: const Text(
+                            label: Text(
                               "Home Repairs & Maintenance",
                               style: TextStyle(
                                 color: KoreColors.orange, // text same as icon
@@ -78,12 +78,12 @@ class ConfirmInfoScreen extends StatelessWidget {
                           ),
                           Chip(
                             backgroundColor: KoreColors.lightYello,
-                            avatar: const Icon(
+                            avatar: Icon(
                               Icons.circle_outlined,
                               color: KoreColors.yello, // orange tone for icon
                               size: 12,
                             ),
-                            label: const Text(
+                            label: Text(
                               "Cleaning & Organization",
                               style: TextStyle(
                                 color: KoreColors.yello, // text same as icon
@@ -94,12 +94,12 @@ class ConfirmInfoScreen extends StatelessWidget {
                           ),
                           Chip(
                             backgroundColor: KoreColors.lightRed,
-                            avatar: const Icon(
+                            avatar: Icon(
                               Icons.circle_outlined,
                               color: KoreColors.red, // orange tone for icon
                               size: 12,
                             ),
-                            label: const Text(
+                            label: Text(
                               "Renovations & Upgrades",
                               style: TextStyle(
                                 color: KoreColors.red, // text same as icon
@@ -140,7 +140,7 @@ class ConfirmInfoScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ResetPasswordScreen(),
+                          builder: (context) => const ResetPasswordScreen(),
                         ),
                       );
                     },

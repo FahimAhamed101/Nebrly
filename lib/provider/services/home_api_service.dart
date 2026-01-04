@@ -341,7 +341,7 @@ class HomeApiService extends GetxService {
       }
 
       // Helper function to safely extract customer data
-      Map<String, dynamic>? _extractCustomerData(dynamic source) {
+      Map<String, dynamic>? extractCustomerData(dynamic source) {
         if (source == null) return null;
         if (source is Map<String, dynamic>) {
           // If it has a 'customer' field, use that
@@ -357,7 +357,7 @@ class HomeApiService extends GetxService {
       }
 
       // Helper function to safely extract address
-      Map<String, dynamic>? _extractAddress(dynamic source) {
+      Map<String, dynamic>? extractAddress(dynamic source) {
         if (source == null) return null;
         if (source is Map<String, dynamic>) {
           // Direct address field
@@ -387,7 +387,7 @@ class HomeApiService extends GetxService {
         ];
 
         for (var source in sources) {
-          customerData = _extractCustomerData(source);
+          customerData = extractCustomerData(source);
           if (customerData != null) {
             print('✅ Found customer data from source');
             break;
@@ -403,7 +403,7 @@ class HomeApiService extends GetxService {
         ];
 
         for (var source in addressSources) {
-          addressData = _extractAddress(source);
+          addressData = extractAddress(source);
           if (addressData != null) {
             print('✅ Found address data from source');
             break;

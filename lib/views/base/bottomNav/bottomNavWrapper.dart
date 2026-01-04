@@ -48,18 +48,18 @@ class _BottomMenuWrappersState extends State<BottomMenuWrappers> {
 
   // Customer pages (same as before)
   final List<Widget> _customerPages = [
-    HomeScreen(),
-    BundelsScreen(),
+    const HomeScreen(),
+    const BundelsScreen(),
     RequestScreen(),
     ProfileScreen(),
   ];
 
   // Provider pages - Home, Orders, Notifications, Profile
   final List<Widget> _providerPages = [
-    provider_home.ProviderHomeScreen(),
+    const provider_home.ProviderHomeScreen(),
     RequestScreen(), // You need to create this screen
-    NotificationsScreen(), // You need to create this screen
-    ProviderProfilePage(),
+    const NotificationsScreen(), // You need to create this screen
+    const ProviderProfilePage(),
   ];
 
   List<Widget> get _pages {
@@ -69,7 +69,7 @@ class _BottomMenuWrappersState extends State<BottomMenuWrappers> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
+      return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
         ),

@@ -28,7 +28,7 @@ class KoreDropdown extends StatelessWidget {
         // Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          value: selectedItem,
+          initialValue: selectedItem,
           decoration: InputDecoration(
             hintText: hint,
             filled: true,

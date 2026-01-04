@@ -4,7 +4,7 @@
 class AppConstants{
   //-------------- base url set here ---------------------//
 
-  static const String BASE_URL="https://naibrly-backend.onrender.com";
+  static const String BASE_URL="https://naibrly-backend-main.onrender.com";
 
 
 

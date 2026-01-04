@@ -204,9 +204,9 @@ class _TimePickerContentState extends State<_TimePickerContent> {
           color: const Color(0xFF1F1D1D),
           fillColor: KoreColors.primary,
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: const Text(
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text(
                 'AM',
                 style: TextStyle(
                   fontSize: 16,
@@ -214,9 +214,9 @@ class _TimePickerContentState extends State<_TimePickerContent> {
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: const Text(
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text(
                 'PM',
                 style: TextStyle(
                   fontSize: 16,

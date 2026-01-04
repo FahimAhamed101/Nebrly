@@ -36,7 +36,6 @@ class _CustomSingleSelectDropdownState extends State<CustomSingleSelectDropdown>
   void _open() {
     if (_isOpen) return;
     final overlay = Overlay.of(context);
-    if (overlay == null) return;
 
     final box = _fieldKey.currentContext?.findRenderObject() as RenderBox?;
     _fieldWidth = box?.size.width ?? 0;
@@ -102,7 +101,7 @@ class _CustomSingleSelectDropdownState extends State<CustomSingleSelectDropdown>
                                 ),
                               ),
                               if (isSelected)
-                                Icon(Icons.check_circle, size: 20, color: KoreColors.primary)
+                                const Icon(Icons.check_circle, size: 20, color: KoreColors.primary)
                               else
                                 Icon(Icons.circle_outlined, size: 20, color: Colors.grey.shade400),
                             ],

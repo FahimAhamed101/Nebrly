@@ -148,7 +148,7 @@ class _QuickChatPageState extends State<QuickChatPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AppText(
+              const AppText(
                 'Custom Message',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -172,7 +172,7 @@ class _QuickChatPageState extends State<QuickChatPage> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.primary, width: 2),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 2),
                   ),
                   contentPadding: const EdgeInsets.all(16),
                 ),
@@ -189,7 +189,7 @@ class _QuickChatPageState extends State<QuickChatPage> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      child: AppText(
+                      child: const AppText(
                         'Cancel',
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -214,7 +214,7 @@ class _QuickChatPageState extends State<QuickChatPage> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      child: AppText(
+                      child: const AppText(
                         'Send',
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -250,7 +250,7 @@ class _QuickChatPageState extends State<QuickChatPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AppText(
+              const AppText(
                 'Edit Message',
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -274,7 +274,7 @@ class _QuickChatPageState extends State<QuickChatPage> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: AppColors.primary, width: 2),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 2),
                   ),
                   contentPadding: const EdgeInsets.all(16),
                 ),
@@ -291,7 +291,7 @@ class _QuickChatPageState extends State<QuickChatPage> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      child: AppText(
+                      child: const AppText(
                         'Cancel',
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -316,7 +316,7 @@ class _QuickChatPageState extends State<QuickChatPage> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      child: AppText(
+                      child: const AppText(
                         'Update',
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -361,26 +361,26 @@ class _QuickChatPageState extends State<QuickChatPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: AppText(
+        title: const AppText(
           'Delete Message',
           fontSize: 18,
           fontWeight: FontWeight.w600,
         ),
-        content: AppText(
+        content: const AppText(
           'Are you sure you want to delete this message?',
           fontSize: 14,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: AppText('Cancel'),
+            child: const AppText('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(
               backgroundColor: Colors.red,
             ),
-            child: AppText(
+            child: const AppText(
               'Delete',
               color: Colors.white,
             ),
@@ -460,20 +460,20 @@ class _QuickChatPageState extends State<QuickChatPage> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Row(
+                const Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.access_time,
                       size: 12,
                       color: Colors.grey,
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 4),
                     AppText(
                       'Tap to send',
                       fontSize: 11,
                       color: Colors.grey,
                     ),
-                    const Spacer(),
+                    Spacer(),
                     AppText(
                       'Long press to edit',
                       fontSize: 11,
@@ -502,7 +502,7 @@ class _QuickChatPageState extends State<QuickChatPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.edit, color: AppColors.primary),
-              title: AppText(
+              title: const AppText(
                 'Edit Message',
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -515,7 +515,7 @@ class _QuickChatPageState extends State<QuickChatPage> {
             const Divider(height: 1),
             ListTile(
               leading: const Icon(Icons.delete, color: Colors.red),
-              title: AppText(
+              title: const AppText(
                 'Delete Message',
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -561,7 +561,7 @@ class _QuickChatPageState extends State<QuickChatPage> {
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _loadQuickMessages,
-            child: AppText('Retry'),
+            child: const AppText('Retry'),
           ),
         ],
       ),
@@ -569,18 +569,18 @@ class _QuickChatPageState extends State<QuickChatPage> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.message_outlined, color: Colors.grey, size: 48),
-          const SizedBox(height: 16),
+          Icon(Icons.message_outlined, color: Colors.grey, size: 48),
+          SizedBox(height: 16),
           AppText(
             'No quick messages available',
             fontSize: 14,
             color: Colors.grey,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           AppText(
             'Tap the + button to add a message',
             fontSize: 12,
@@ -605,10 +605,10 @@ class _QuickChatPageState extends State<QuickChatPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              const Row(
                 children: [
-                  const Icon(Icons.info_outline, color: AppColors.primary, size: 20),
-                  const SizedBox(width: 8),
+                  Icon(Icons.info_outline, color: AppColors.primary, size: 20),
+                  SizedBox(width: 8),
                   AppText(
                     'Quick Messages',
                     fontSize: 14,
@@ -634,7 +634,7 @@ class _QuickChatPageState extends State<QuickChatPage> {
           color: AppColors.Black,
         ),
         const SizedBox(height: 12),
-        ..._messages.map(_buildMessageTile).toList(),
+        ..._messages.map(_buildMessageTile),
         const SizedBox(height: 80), // Space for FAB
       ],
     );
@@ -651,7 +651,7 @@ class _QuickChatPageState extends State<QuickChatPage> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: AppText(
+        title: const AppText(
           'Quick Messages',
           fontSize: 18,
           fontWeight: FontWeight.w600,

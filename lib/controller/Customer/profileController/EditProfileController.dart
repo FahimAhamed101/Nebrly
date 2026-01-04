@@ -43,7 +43,7 @@ class EditProfileController extends GetxController {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Center(child: CircularProgressIndicator()),
+      builder: (context) => const Center(child: CircularProgressIndicator()),
     );
 
     try {
@@ -54,7 +54,7 @@ class EditProfileController extends GetxController {
       );
 
       // Add headers
-      String? token = await TokenService().getToken();
+      String? token = TokenService().getToken();
       request.headers.addAll({
         'Authorization': 'Bearer $token',
         'Accept': 'application/json',
@@ -97,7 +97,7 @@ class EditProfileController extends GetxController {
         Get.find<ProfileController>().fetchUserData();
         // Show simple toast using ScaffoldMessenger
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text("Profile updated successfully"),
             backgroundColor: Colors.green,
           ),
@@ -106,7 +106,7 @@ class EditProfileController extends GetxController {
         // Handle error
         Navigator.of(context, rootNavigator: true).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text("Failed to update profile"),
             backgroundColor: Colors.red,
           ),

@@ -58,9 +58,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             const SizedBox(height: 15),
             RichText(
               textAlign: TextAlign.center,
-              text: TextSpan(
+              text: const TextSpan(
                 text: "Welcome to",
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   color: Colors.black87,
                   fontWeight: FontWeight.w400,
@@ -68,7 +68,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 children: [
                   TextSpan(
                     text: " Naibrly?",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 24,
                       color: Color(0xFF0E7A60),
                       fontWeight: FontWeight.w400,
@@ -78,8 +78,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8.0),
               child: AppText(
                 "A place to find all your home services and the chance to join your friends and neighbors to save money",
                 fontSize: 16,
@@ -110,7 +110,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   color: Colors.transparent,
                   border: Border.all(color: AppColors.primary, width: 1.0),
                 ),
-                child: Center(
+                child: const Center(
                   child: AppText(
                     "Sign in",
                     fontSize: 16,
@@ -125,7 +125,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               onTap: () {
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => BottomMenuWrappers()),
+                  MaterialPageRoute(builder: (context) => const BottomMenuWrappers()),
                   (Route<dynamic> route) => false,
                 );
               },
@@ -174,7 +174,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  AppText(
+                  const AppText(
                     "Please select:",
                     color: AppColors.textcolor,
                     fontSize: 24,
@@ -271,12 +271,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       ],
       child: Container(
         height: 42,
-        padding: EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             width: 1,
-            color: Color(0xFF0E7A60).withOpacity(0.10),
+            color: const Color(0xFF0E7A60).withOpacity(0.10),
           ),
         ),
         child: Row(
@@ -308,7 +308,7 @@ class Skip extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          AppText(
+          const AppText(
             "Skip",
             fontSize: 18,
             color: AppColors.primary,

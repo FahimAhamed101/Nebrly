@@ -42,7 +42,7 @@ class _PaymentInformationScreenState extends State<PaymentInformationScreen> {
           icon: const Icon(Icons.arrow_back, color: AppColors.DarkGray),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: AppText(
+        title: const AppText(
           'Payment information',
           fontSize: 16,
           fontWeight: FontWeight.w600,
@@ -56,7 +56,7 @@ class _PaymentInformationScreenState extends State<PaymentInformationScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Main instruction
-            AppText(
+            const AppText(
               'Please enter payment information',
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -66,7 +66,7 @@ class _PaymentInformationScreenState extends State<PaymentInformationScreen> {
             const SizedBox(height: 24),
             
             // Pay With section
-            AppText(
+            const AppText(
               'Pay With:',
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -76,7 +76,7 @@ class _PaymentInformationScreenState extends State<PaymentInformationScreen> {
             const SizedBox(height: 16),
             
             // Card Number
-            AppText(
+            const AppText(
               'Card Number',
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -121,7 +121,7 @@ class _PaymentInformationScreenState extends State<PaymentInformationScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppText(
+                      const AppText(
                         'Expiration Date',
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -166,7 +166,7 @@ class _PaymentInformationScreenState extends State<PaymentInformationScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AppText(
+                      const AppText(
                         'CVV',
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -236,7 +236,7 @@ class _PaymentInformationScreenState extends State<PaymentInformationScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        AppText(
+                        const AppText(
                           'Your information is secure',
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -271,7 +271,7 @@ class _PaymentInformationScreenState extends State<PaymentInformationScreen> {
                   ),
                   elevation: 0,
                 ),
-                child: AppText(
+                child: const AppText(
                   'Confirm',
                   fontSize: 16,
                   fontWeight: FontWeight.w600,

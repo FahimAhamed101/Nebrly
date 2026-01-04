@@ -25,7 +25,7 @@ class RequestScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: AppColors.White,
         elevation: 0,
-        title: AppText(
+        title: const AppText(
           'My Requests',
           fontSize: 18,
           fontWeight: FontWeight.w600,
@@ -55,7 +55,7 @@ class RequestScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                AppText(
+                const AppText(
                   'Error loading requests',
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -148,7 +148,7 @@ class RequestScreen extends StatelessWidget {
             color: AppColors.DarkGray.withOpacity(0.5),
           ),
           const SizedBox(height: 12),
-          AppText(
+          const AppText(
             'No requests found',
             fontSize: 16,
             fontWeight: FontWeight.w600,

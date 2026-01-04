@@ -117,7 +117,7 @@ class _PayoutInformationScreenState extends State<PayoutInformationScreen> {
                 ),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               ),
-              value: selectedBank,
+              initialValue: selectedBank,
               hint: const Text("Choose your bank"),
               items: [
                 "Bank of America",
@@ -199,12 +199,12 @@ class _PayoutInformationScreenState extends State<PayoutInformationScreen> {
                 color: const Color(0xFFE9F5F0),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Row(
+              child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.person, color: Colors.teal, size: 28),
-                  const SizedBox(width: 10),
-                  const Expanded(
+                  Icon(Icons.person, color: Colors.teal, size: 28),
+                  SizedBox(width: 10),
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

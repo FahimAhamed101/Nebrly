@@ -89,7 +89,7 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
                 color: const Color(0xFFF3F4F6),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.chevron_left,
                 color: AppColors.textcolor,
                 size: 20,
@@ -117,7 +117,7 @@ class _CustomDatePickerState extends State<CustomDatePicker> {
                 color: const Color(0xFFF3F4F6),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.chevron_right,
                 color: AppColors.textcolor,
                 size: 20,

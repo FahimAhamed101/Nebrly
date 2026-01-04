@@ -3,7 +3,7 @@ import 'package:naibrly/services/mock_data_service.dart';
 import 'package:naibrly/views/base/AppText/appText.dart';
 
 class ExampleUsageScreen extends StatefulWidget {
-  const ExampleUsageScreen({Key? key}) : super(key: key);
+  const ExampleUsageScreen({super.key});
 
   @override
   State<ExampleUsageScreen> createState() => _ExampleUsageScreenState();

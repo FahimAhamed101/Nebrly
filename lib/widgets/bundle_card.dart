@@ -27,7 +27,7 @@ class BundleCard extends StatefulWidget {
   final String? publishedText;
 
   const BundleCard({
-    Key? key,
+    super.key,
     required this.serviceTitle,
     required this.originalPrice,
     required this.discountedPrice,
@@ -45,7 +45,7 @@ class BundleCard extends StatefulWidget {
     this.publishedText,
     this.bundleId,
     this.loadingBundleId,
-  }) : super(key: key);
+  });
 
   @override
   State<BundleCard> createState() => _BundleCardState();
@@ -258,7 +258,7 @@ class _BundleCardState extends State<BundleCard> {
                   child: OutlinedButton(
                     onPressed: widget.onToggleExpansion ?? () {},
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppColors.primary, width: 1),
+                      side: const BorderSide(color: AppColors.primary, width: 1),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),

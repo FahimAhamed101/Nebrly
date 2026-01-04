@@ -15,7 +15,7 @@ class PrivacyPolicyScreen extends StatelessWidget{
     return Scaffold(
       backgroundColor: AppColors.White,
       appBar: AppBar(
-        systemOverlayStyle: SystemUiOverlayStyle(
+        systemOverlayStyle: const SystemUiOverlayStyle(
           statusBarIconBrightness: Brightness.dark,
           statusBarBrightness: Brightness.light,
         ),
@@ -35,7 +35,7 @@ class PrivacyPolicyScreen extends StatelessWidget{
           ),
         ),
 
-        title: AppText(
+        title: const AppText(
           "Privacy policy",
           fontSize: 20,
           fontWeight: FontWeight.w600,
@@ -44,7 +44,7 @@ class PrivacyPolicyScreen extends StatelessWidget{
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -85,7 +85,7 @@ class PrivacyPolicyScreen extends StatelessWidget{
   // Helper method to build each section
   Widget _buildSection({required String title, required String content}) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -95,7 +95,7 @@ class PrivacyPolicyScreen extends StatelessWidget{
             fontWeight: FontWeight.w600,
             color: Colors.black,
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           AppText(
             content,
             fontSize: 14,

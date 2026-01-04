@@ -95,7 +95,7 @@ class PendingRequestBottomSheet extends StatelessWidget {
             const SizedBox(height: 24),
             
             // Title
-            AppText(
+            const AppText(
               "Please wait for the provider's confirmation",
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -127,7 +127,7 @@ class PendingRequestBottomSheet extends StatelessWidget {
                   ),
                   elevation: 0,
                 ),
-                child: AppText(
+                child: const AppText(
                   "Okay",
                   fontSize: 16,
                   fontWeight: FontWeight.w600,

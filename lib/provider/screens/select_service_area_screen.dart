@@ -24,7 +24,7 @@ class _SelectServiceAreaScreenState extends State<SelectServiceAreaScreen> {
 
   // Map related variables
   late GoogleMapController mapController;
-  LatLng _center = LatLng(37.7749, -122.4194); // Default: San Francisco
+  LatLng _center = const LatLng(37.7749, -122.4194); // Default: San Francisco
   Set<Marker> markers = {};
   Set<Polygon> serviceAreaPolygons = {};
   bool isLoading = false;
@@ -126,9 +126,9 @@ class _SelectServiceAreaScreenState extends State<SelectServiceAreaScreen> {
       _center = LatLng(position.latitude, position.longitude);
       markers.add(
         Marker(
-          markerId: MarkerId('current_location'),
+          markerId: const MarkerId('current_location'),
           position: _center,
-          infoWindow: InfoWindow(title: 'Current Location'),
+          infoWindow: const InfoWindow(title: 'Current Location'),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
         ),
       );
@@ -304,11 +304,11 @@ class _SelectServiceAreaScreenState extends State<SelectServiceAreaScreen> {
     }
 
     return Polygon(
-      polygonId: PolygonId('service_area'),
+      polygonId: const PolygonId('service_area'),
       points: polygonCoords,
       strokeWidth: 2,
-      strokeColor: Color(0xFF0E7A60),
-      fillColor: Color(0xFF0E7A60).withOpacity(0.3),
+      strokeColor: const Color(0xFF0E7A60),
+      fillColor: const Color(0xFF0E7A60).withOpacity(0.3),
     );
   }
 
@@ -406,7 +406,7 @@ class _SelectServiceAreaScreenState extends State<SelectServiceAreaScreen> {
                         Padding(
                           padding: const EdgeInsets.only(right: 12),
                           child: IconButton(
-                            icon: Icon(Icons.search, color: KoreColors.textLight),
+                            icon: const Icon(Icons.search, color: KoreColors.textLight),
                             onPressed: _searchByZipCode,
                           ),
                         ),
@@ -416,14 +416,14 @@ class _SelectServiceAreaScreenState extends State<SelectServiceAreaScreen> {
                 ),
                 const SizedBox(width: 8),
                 isLoading
-                    ? CircularProgressIndicator()
+                    ? const CircularProgressIndicator()
                     : Container(
                   decoration: BoxDecoration(
-                    color: Color(0xFF0E7A60),
+                    color: const Color(0xFF0E7A60),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: IconButton(
-                    icon: Icon(Icons.search, color: Colors.white),
+                    icon: const Icon(Icons.search, color: Colors.white),
                     onPressed: _searchByZipCode,
                   ),
                 ),
@@ -455,7 +455,7 @@ class _SelectServiceAreaScreenState extends State<SelectServiceAreaScreen> {
                         style: const TextStyle(fontSize: 14),
                       ),
                       onTap: () => _selectZipCode(suggestion),
-                      trailing: Icon(Icons.add_circle_outline, color: Color(0xFF0E7A60)),
+                      trailing: const Icon(Icons.add_circle_outline, color: Color(0xFF0E7A60)),
                     );
                   }).toList(),
                 ),
@@ -464,10 +464,10 @@ class _SelectServiceAreaScreenState extends State<SelectServiceAreaScreen> {
             // Error Message
             if (errorMessage.isNotEmpty)
               Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0),
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: Text(
                   errorMessage,
-                  style: TextStyle(color: Colors.red, fontSize: 12),
+                  style: const TextStyle(color: Colors.red, fontSize: 12),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -483,20 +483,20 @@ class _SelectServiceAreaScreenState extends State<SelectServiceAreaScreen> {
                     children: [
                       Text(
                         "Selected Areas (${_selectedAreas.length})",
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: Colors.black,
                         ),
                       ),
-                      Spacer(),
+                      const Spacer(),
                       IconButton(
-                        icon: Icon(Icons.zoom_in_map, color: Color(0xFF0E7A60), size: 20),
+                        icon: const Icon(Icons.zoom_in_map, color: Color(0xFF0E7A60), size: 20),
                         onPressed: _zoomToServiceAreas,
                         tooltip: 'Zoom to Service Areas',
                       ),
                       IconButton(
-                        icon: Icon(Icons.clear_all, color: Colors.grey, size: 20),
+                        icon: const Icon(Icons.clear_all, color: Colors.grey, size: 20),
                         onPressed: _clearSearchMarkers,
                         tooltip: 'Clear Search Markers',
                       ),
@@ -554,7 +554,7 @@ class _SelectServiceAreaScreenState extends State<SelectServiceAreaScreen> {
                         top: 16,
                         right: 16,
                         child: Container(
-                          padding: EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(8),
@@ -574,43 +574,43 @@ class _SelectServiceAreaScreenState extends State<SelectServiceAreaScreen> {
                                   Container(
                                     width: 12,
                                     height: 12,
-                                    decoration: BoxDecoration(
+                                    decoration: const BoxDecoration(
                                       color: Colors.blue,
                                       shape: BoxShape.circle,
                                     ),
                                   ),
-                                  SizedBox(width: 8),
-                                  Text('Current', style: TextStyle(fontSize: 12)),
+                                  const SizedBox(width: 8),
+                                  const Text('Current', style: TextStyle(fontSize: 12)),
                                 ],
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Row(
                                 children: [
                                   Container(
                                     width: 12,
                                     height: 12,
-                                    decoration: BoxDecoration(
+                                    decoration: const BoxDecoration(
                                       color: Colors.red,
                                       shape: BoxShape.circle,
                                     ),
                                   ),
-                                  SizedBox(width: 8),
-                                  Text('Searched', style: TextStyle(fontSize: 12)),
+                                  const SizedBox(width: 8),
+                                  const Text('Searched', style: TextStyle(fontSize: 12)),
                                 ],
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Row(
                                 children: [
                                   Container(
                                     width: 12,
                                     height: 12,
-                                    decoration: BoxDecoration(
+                                    decoration: const BoxDecoration(
                                       color: Colors.green,
                                       shape: BoxShape.circle,
                                     ),
                                   ),
-                                  SizedBox(width: 8),
-                                  Text('Service', style: TextStyle(fontSize: 12)),
+                                  const SizedBox(width: 8),
+                                  const Text('Service', style: TextStyle(fontSize: 12)),
                                 ],
                               ),
                             ],
@@ -660,16 +660,16 @@ class _SelectServiceAreaScreenState extends State<SelectServiceAreaScreen> {
         children: [
           FloatingActionButton(
             onPressed: _getCurrentLocation,
-            child: Icon(Icons.my_location, size: 20),
             backgroundColor: Colors.blue,
             mini: true,
+            child: Icon(Icons.my_location, size: 20),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           FloatingActionButton(
             onPressed: _zoomToServiceAreas,
-            child: Icon(Icons.zoom_in_map, size: 20),
-            backgroundColor: Color(0xFF0E7A60),
+            backgroundColor: const Color(0xFF0E7A60),
             mini: true,
+            child: Icon(Icons.zoom_in_map, size: 20),
           ),
         ],
       ),
@@ -704,7 +704,7 @@ class _ZipChip extends StatelessWidget {
           const SizedBox(width: 6),
           GestureDetector(
             onTap: onRemove,
-            child: Icon(Icons.close, size: 14, color: Color(0xFF0E7A60)),
+            child: const Icon(Icons.close, size: 14, color: Color(0xFF0E7A60)),
           ),
         ],
       ),

@@ -167,7 +167,7 @@ class _ProviderHeaderState extends State<ProviderHeader> {
                 Container(
                   height: 55,
                   width: 80,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: Colors.transparent,
                   ),
                   child: Stack(
@@ -180,7 +180,7 @@ class _ProviderHeaderState extends State<ProviderHeader> {
                           "\$${earnings.toStringAsFixed(2)}",
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: Color(0xFF0E7A60),
+                          color: const Color(0xFF0E7A60),
                         ),
                       ),
                     ],
@@ -193,7 +193,7 @@ class _ProviderHeaderState extends State<ProviderHeader> {
                   link: _layerLink,
                   child: IconButton(
                     onPressed: _toggleDropdown,
-                    icon: Icon(
+                    icon: const Icon(
                       Icons.more_vert,
                       color: Colors.black,
                     ),

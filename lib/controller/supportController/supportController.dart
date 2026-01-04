@@ -16,12 +16,12 @@ class SupportController extends GetxController {
     isSent.value = false;
 
     // simulate sending email
-    Future.delayed(Duration(seconds: 2), () {
+    Future.delayed(const Duration(seconds: 2), () {
       isLoading.value = false;
       isSent.value = true;
 
       // optional: hide success message after 2 seconds and clear fields
-      Future.delayed(Duration(seconds: 2), () {
+      Future.delayed(const Duration(seconds: 2), () {
         isSent.value = false;
         subject.clear();
         emailCompose.clear();

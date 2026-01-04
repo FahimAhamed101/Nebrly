@@ -98,16 +98,16 @@ class AuthController extends GetxController {
         final id = data['data']['user']['id'];
         final role = data['data']['user']['role'];
 
-        print("Response: ${role} role");
+        print("Response: $role role");
         await TokenService().saveToken(token);
         await TokenService().saveUserId(id);
         await TokenService().saveUserRole(role); // Save user role
-        print("Response: ${token} token");
+        print("Response: $token token");
 
         // Redirect both customer and provider to BottomMenuWrappers
         Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => BottomMenuWrappers()),
+            MaterialPageRoute(builder: (context) => const BottomMenuWrappers()),
                 (Route<dynamic> route) => false
         );
 
@@ -180,7 +180,7 @@ class AuthController extends GetxController {
 
         Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => BottomMenuWrappers()),
+            MaterialPageRoute(builder: (context) => const BottomMenuWrappers()),
                 (Route<dynamic> route) => false
         );
         showSuccess(context, "Account created successfully!");
@@ -256,7 +256,7 @@ class AuthController extends GetxController {
         // FIXED: Redirect to BottomMenuWrappers instead of ProviderProfilePage
         Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => BottomMenuWrappers()),
+            MaterialPageRoute(builder: (context) => const BottomMenuWrappers()),
                 (Route<dynamic> route) => false
         );
         showSuccess(context, "Provider account created successfully!");
@@ -351,7 +351,7 @@ class AuthController extends GetxController {
     do {
       final targetPath = file.path.replaceFirst(
         RegExp(r'\.(jpg|jpeg|png|webp|heic)$'),
-        '_compressed_${quality}.jpg',
+        '_compressed_$quality.jpg',
       );
 
       final result = await FlutterImageCompress.compressAndGetFile(
@@ -426,7 +426,7 @@ class AuthController extends GetxController {
   void showError(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: TextStyle(color: Colors.white)),
+        content: Text(message, style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.red,
       ),
     );
@@ -435,7 +435,7 @@ class AuthController extends GetxController {
   void showSuccess(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: TextStyle(color: Colors.white)),
+        content: Text(message, style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.green,
       ),
     );

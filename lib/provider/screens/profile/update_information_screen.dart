@@ -14,26 +14,33 @@ class UpdateInformationScreen extends StatefulWidget {
 }
 
 class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
-  final ProfileController _controller = Get.find<ProfileController>();
+  final UpdateprofileController _controller = Get.find<UpdateprofileController>();
 
   final TextEditingController _businessNameRegisteredController = TextEditingController();
   final TextEditingController _businessNameDBAController = TextEditingController();
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _websiteController = TextEditingController();
   final TextEditingController _locksmithRateController = TextEditingController();
   final TextEditingController _plumberRateController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _experienceController = TextEditingController();
 
   String _selectedRole = "";
-  String _selectedStartDay = "Mon";
-  String _selectedEndDay = "Fri";
-  String _selectedStartTime = "9:00 am";
-  String _selectedEndTime = "5:00 pm";
+  String _selectedStartDay = "mon";
+  String _selectedEndDay = "fri";
+  String _selectedStartTime = "9.00pm";
+  String _selectedEndTime = "10.00am";
   String _selectedCountryCode = "1+";
 
   List<String> _selectedServices = ["Plumbing", "Locksmith"];
-  List<Map<String, dynamic>> _existingServices = [];
+  final List<String> _availableServices = [
+    "Electrical", "Appliance Repairs", "Carpet Cleaning",
+    "Concrete & Masonry", "Plumbing", "Locksmith"
+  ];
 
   @override
   void initState() {
@@ -46,87 +53,134 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
   void _loadUserData() {
     if (_controller.user.value != null) {
       final user = _controller.user.value!;
+
+      // Load basic user info
       _businessNameRegisteredController.text = user.businessNameRegistered ?? "";
       _businessNameDBAController.text = user.businessNameDBA ?? "";
-
-      // Use fallback for address
-      _addressController.text = _getUserAddress(user);
-
+      _firstNameController.text = user.firstName ?? "";
+      _lastNameController.text = user.lastName ?? "";
+      _emailController.text = user.email ?? "";
       _phoneController.text = user.phone ?? "";
       _websiteController.text = user.website ?? "";
       _descriptionController.text = user.description ?? "";
+      _experienceController.text = user.experience.toString() ?? "0";
 
-      // Set rates if they exist
-      if (user.locksmithRate != null) {
-        _locksmithRateController.text = "\$${user.locksmithRate!.toStringAsFixed(2)}";
+      // Set role from providerRole
+      _selectedRole = user.providerRole ?? "";
+
+      // Load address from businessAddress
+      _addressController.text = _getUserAddress(user);
+
+      // Load service days
+      _selectedStartDay = user.businessServiceDays!.start.toLowerCase();
+      _selectedEndDay = user.businessServiceDays!.end.toLowerCase();
+    
+      // Load business hours
+      _selectedStartTime = user.businessHours!.start;
+      _selectedEndTime = user.businessHours!.end;
+    
+      // Load hourly rates
+      if (user.locksmithRate != null && user.locksmithRate! > 0) {
+        _locksmithRateController.text = user.locksmithRate!.toStringAsFixed(2);
       }
-      if (user.plumberRate != null) {
-        _plumberRateController.text = "\$${user.plumberRate!.toStringAsFixed(2)}";
+      if (user.plumberRate != null && user.plumberRate! > 0) {
+        _plumberRateController.text = user.plumberRate!.toStringAsFixed(2);
       }
 
-      // Load existing services
-      if (user.selectedServices != null) {
+      // Load services provided
+      if (user.servicesProvided.isNotEmpty) {
+        _selectedServices = user.servicesProvided.map((service) => service.name).toList();
+      } else if (user.selectedServices != null) {
         _selectedServices = List<String>.from(user.selectedServices!);
       }
     }
   }
 
   String _getUserAddress(UserModel user) {
-    // Check different possible field names for address
-    if (user.address != null && user.address!.isNotEmpty) {
-      return user.address!;
-    }
-    return "123 Oak Street Springfield, IL 62704"; // Fallback
+    final address = user.businessAddress!;
+    final parts = [
+      address.street,
+      address.city,
+      if (address.state.isNotEmpty) address.state,
+      if (address.zipCode.isNotEmpty) address.zipCode,
+    ].where((part) => part.isNotEmpty).toList();
+    return parts.join(', ');
+      return user.address ?? "123 Main Street, New York, NY";
   }
 
   @override
   void dispose() {
     _businessNameRegisteredController.dispose();
     _businessNameDBAController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _emailController.dispose();
     _addressController.dispose();
     _phoneController.dispose();
     _websiteController.dispose();
     _locksmithRateController.dispose();
     _plumberRateController.dispose();
     _descriptionController.dispose();
+    _experienceController.dispose();
     super.dispose();
   }
 
   Future<void> _updateProfile() async {
     try {
-      // Parse rates
-      double locksmithRate = double.tryParse(
-          _locksmithRateController.text.replaceAll('\$', '').trim()) ?? 0.0;
-      double plumberRate = double.tryParse(
-          _plumberRateController.text.replaceAll('\$', '').trim()) ?? 0.0;
+      // Prepare data for update
+      final List<Map<String, dynamic>> servicesToAdd = _selectedServices.map((service) {
+        double hourlyRate = 0;
 
-      // Prepare services data - match the API format from your documentation
-      List<Map<String, dynamic>> servicesToAdd = _selectedServices.map((service) {
+        // Set rate based on service type
+        if (service.toLowerCase().contains('locksmith')) {
+          hourlyRate = double.tryParse(_locksmithRateController.text.trim()) ?? 0;
+        } else if (service.toLowerCase().contains('plumbing') ||
+            service.toLowerCase().contains('plumber')) {
+          hourlyRate = double.tryParse(_plumberRateController.text.trim()) ?? 0;
+        } else {
+          // Default rate for other services
+          hourlyRate = 50.0;
+        }
+
         return {
           'name': service,
-          'hourlyRate': service.toLowerCase().contains('locksmith')
-              ? locksmithRate
-              : plumberRate,
+          'hourlyRate': hourlyRate,
         };
       }).toList();
 
+      // Check if we have existing services to remove
+      final List<Map<String, dynamic>> servicesToRemove = [];
+      if (_controller.user.value?.servicesProvided != null) {
+        final existingServices = _controller.user.value!.servicesProvided;
+        for (var existing in existingServices) {
+          if (!_selectedServices.contains(existing.name)) {
+            servicesToRemove.add({
+              '_id': existing.id,
+              'name': existing.name,
+            });
+          }
+        }
+      }
+
+      // Update the profile
       final success = await _controller.updateProviderProfile(
-        firstName: _businessNameRegisteredController.text.split(' ').first,
-        lastName: _businessNameRegisteredController.text.split(' ').length > 1
-            ? _businessNameRegisteredController.text.split(' ').last
-            : '',
-        phone: _phoneController.text,
-        businessNameRegistered: _businessNameRegisteredController.text,
-        description: _descriptionController.text.isNotEmpty
-            ? _descriptionController.text
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        phone: _phoneController.text.trim(),
+        businessNameRegistered: _businessNameRegisteredController.text.trim(),
+        description: _descriptionController.text.trim().isNotEmpty
+            ? _descriptionController.text.trim()
             : "Professional service provider",
-        experience: "5", // Default or from a field
-        maxBundleCapacity: "10", // Default or from a field
+        experience: _experienceController.text.trim().isNotEmpty
+            ? _experienceController.text.trim()
+            : "5",
+        maxBundleCapacity: "10",
+        servicesToRemove: servicesToRemove.isNotEmpty ? servicesToRemove : null,
         servicesToAdd: servicesToAdd,
       );
 
       if (success) {
-        Get.back(); // Go back to previous screen
+        Get.back();
       }
     } catch (e) {
       Get.snackbar(
@@ -138,9 +192,6 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
       );
     }
   }
-
-  // Rest of your widget code remains the same...
-  // Keep all the _build methods exactly as you had them
 
   @override
   Widget build(BuildContext context) {
@@ -202,6 +253,35 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
               ),
               const SizedBox(height: 16),
 
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTextField(
+                      label: "First Name",
+                      controller: _firstNameController,
+                      hintText: "Enter first name",
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildTextField(
+                      label: "Last Name",
+                      controller: _lastNameController,
+                      hintText: "Enter last name",
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              _buildTextField(
+                label: "Email",
+                controller: _emailController,
+                hintText: "Enter email address",
+                readOnly: true, // Email is usually not editable
+              ),
+              const SizedBox(height: 16),
+
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -216,7 +296,7 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
                   const SizedBox(height: 8),
                   CustomSingleSelectDropdown(
                     hint: "Select your role",
-                    items: const ["Owner", "Manager", "Employee"],
+                    items: const ["owner", "manager", "employee"],
                     selectedItem: _selectedRole.isEmpty ? null : _selectedRole,
                     onChanged: (value) => setState(() => _selectedRole = value ?? ""),
                   ),
@@ -235,7 +315,8 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
               _buildTextField(
                 label: "Address",
                 controller: _addressController,
-                readOnly: true,
+                hintText: "Business address",
+                maxLines: 2,
               ),
               const SizedBox(height: 16),
 
@@ -246,6 +327,14 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
                 label: "Business Website",
                 controller: _websiteController,
                 hintText: "https://example.com",
+              ),
+              const SizedBox(height: 16),
+
+              _buildTextField(
+                label: "Years of Experience",
+                controller: _experienceController,
+                hintText: "Enter years of experience",
+                keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 20),
 
@@ -258,55 +347,57 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
               _buildServicesSection(),
               const SizedBox(height: 16),
 
-              // Service chips
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _selectedServices.map((service) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF8DC),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 5,
-                          height: 5,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFFA500),
-                            shape: BoxShape.circle,
+              // Selected Services Chips
+              if (_selectedServices.isNotEmpty)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _selectedServices.map((service) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF8DC),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 5,
+                            height: 5,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFFA500),
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          service,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black87,
+                          const SizedBox(width: 8),
+                          Text(
+                            service,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedServices.remove(service);
-                            });
-                          },
-                          child: Icon(
-                            Icons.close,
-                            size: 16,
-                            color: Colors.grey.shade600,
+                          const SizedBox(width: 6),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedServices.remove(service);
+                              });
+                            },
+                            child: Icon(
+                              Icons.close,
+                              size: 16,
+                              color: Colors.grey.shade600,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+
               const SizedBox(height: 20),
 
               // Hourly Rate Cards
@@ -350,7 +441,7 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
                     ),
                   )
                       : const Text(
-                    "Update",
+                    "Update Profile",
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -367,13 +458,14 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
     );
   }
 
-  // Add the missing _buildTextField method with maxLines parameter
+  // Build methods remain mostly the same with small improvements
   Widget _buildTextField({
     required String label,
     required TextEditingController controller,
     String? hintText,
     bool readOnly = false,
     int maxLines = 1,
+    TextInputType keyboardType = TextInputType.text,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -392,6 +484,7 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
           readOnly: readOnly,
           style: const TextStyle(fontSize: 14),
           maxLines: maxLines,
+          keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
@@ -407,10 +500,7 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: Color(0xFF0E7A60), width: 1.5),
             ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 12,
-            ),
+
             filled: true,
             fillColor: readOnly ? Colors.grey.shade100 : Colors.white,
           ),
@@ -419,7 +509,6 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
     );
   }
 
-  // Keep all other _build methods exactly as they were
   Widget _buildUploadSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -494,7 +583,6 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
     );
   }
 
-  // ... Keep all other _build methods exactly as they were in your original code
   Widget _buildPhoneNumberFields() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -513,7 +601,7 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
             Expanded(
               flex: 2,
               child: DropdownButtonFormField<String>(
-                value: _selectedCountryCode,
+                initialValue: _selectedCountryCode,
                 style: const TextStyle(fontSize: 14, color: Colors.black),
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
@@ -536,9 +624,9 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
                   fillColor: Colors.white,
                 ),
                 items: const [
-                  DropdownMenuItem(value: "1+", child: Text("1+")),
-                  DropdownMenuItem(value: "44+", child: Text("44+")),
-                  DropdownMenuItem(value: "91+", child: Text("91+")),
+                  DropdownMenuItem(value: "1+", child: Text("1+ (US)")),
+                  DropdownMenuItem(value: "44+", child: Text("44+ (UK)")),
+                  DropdownMenuItem(value: "91+", child: Text("91+ (IN)")),
                 ],
                 onChanged: (value) => setState(() => _selectedCountryCode = value ?? "1+"),
               ),
@@ -594,7 +682,7 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _selectedStartDay,
+                initialValue: _selectedStartDay,
                 style: const TextStyle(fontSize: 14, color: Colors.black),
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
@@ -617,15 +705,15 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
                   fillColor: Colors.white,
                 ),
                 items: const [
-                  DropdownMenuItem(value: "Mon", child: Text("Mon")),
-                  DropdownMenuItem(value: "Tue", child: Text("Tue")),
-                  DropdownMenuItem(value: "Wed", child: Text("Wed")),
-                  DropdownMenuItem(value: "Thu", child: Text("Thu")),
-                  DropdownMenuItem(value: "Fri", child: Text("Fri")),
-                  DropdownMenuItem(value: "Sat", child: Text("Sat")),
-                  DropdownMenuItem(value: "Sun", child: Text("Sun")),
+                  DropdownMenuItem(value: "mon", child: Text("Monday")),
+                  DropdownMenuItem(value: "tue", child: Text("Tuesday")),
+                  DropdownMenuItem(value: "wed", child: Text("Wednesday")),
+                  DropdownMenuItem(value: "thu", child: Text("Thursday")),
+                  DropdownMenuItem(value: "fri", child: Text("Friday")),
+                  DropdownMenuItem(value: "sat", child: Text("Saturday")),
+                  DropdownMenuItem(value: "sun", child: Text("Sunday")),
                 ],
-                onChanged: (value) => setState(() => _selectedStartDay = value ?? "Mon"),
+                onChanged: (value) => setState(() => _selectedStartDay = value ?? "mon"),
               ),
             ),
             Padding(
@@ -640,7 +728,7 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
             ),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _selectedEndDay,
+                initialValue: _selectedEndDay,
                 style: const TextStyle(fontSize: 14, color: Colors.black),
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
@@ -663,15 +751,15 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
                   fillColor: Colors.white,
                 ),
                 items: const [
-                  DropdownMenuItem(value: "Mon", child: Text("Mon")),
-                  DropdownMenuItem(value: "Tue", child: Text("Tue")),
-                  DropdownMenuItem(value: "Wed", child: Text("Wed")),
-                  DropdownMenuItem(value: "Thu", child: Text("Thu")),
-                  DropdownMenuItem(value: "Fri", child: Text("Fri")),
-                  DropdownMenuItem(value: "Sat", child: Text("Sat")),
-                  DropdownMenuItem(value: "Sun", child: Text("Sun")),
+                  DropdownMenuItem(value: "mon", child: Text("Monday")),
+                  DropdownMenuItem(value: "tue", child: Text("Tuesday")),
+                  DropdownMenuItem(value: "wed", child: Text("Wednesday")),
+                  DropdownMenuItem(value: "thu", child: Text("Thursday")),
+                  DropdownMenuItem(value: "fri", child: Text("Friday")),
+                  DropdownMenuItem(value: "sat", child: Text("Saturday")),
+                  DropdownMenuItem(value: "sun", child: Text("Sunday")),
                 ],
-                onChanged: (value) => setState(() => _selectedEndDay = value ?? "Fri"),
+                onChanged: (value) => setState(() => _selectedEndDay = value ?? "fri"),
               ),
             ),
           ],
@@ -697,7 +785,7 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _selectedStartTime,
+                initialValue: _selectedStartTime,
                 style: const TextStyle(fontSize: 14, color: Colors.black),
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
@@ -720,12 +808,21 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
                   fillColor: Colors.white,
                 ),
                 items: const [
-                  DropdownMenuItem(value: "9:00 am", child: Text("9:00 am")),
-                  DropdownMenuItem(value: "10:00 am", child: Text("10:00 am")),
-                  DropdownMenuItem(value: "11:00 am", child: Text("11:00 am")),
-                  DropdownMenuItem(value: "12:00 pm", child: Text("12:00 pm")),
+                  DropdownMenuItem(value: "9.00am", child: Text("9:00 AM")),
+                  DropdownMenuItem(value: "10.00am", child: Text("10:00 AM")),
+                  DropdownMenuItem(value: "11.00am", child: Text("11:00 AM")),
+                  DropdownMenuItem(value: "12.00pm", child: Text("12:00 PM")),
+                  DropdownMenuItem(value: "1.00pm", child: Text("1:00 PM")),
+                  DropdownMenuItem(value: "2.00pm", child: Text("2:00 PM")),
+                  DropdownMenuItem(value: "3.00pm", child: Text("3:00 PM")),
+                  DropdownMenuItem(value: "4.00pm", child: Text("4:00 PM")),
+                  DropdownMenuItem(value: "5.00pm", child: Text("5:00 PM")),
+                  DropdownMenuItem(value: "6.00pm", child: Text("6:00 PM")),
+                  DropdownMenuItem(value: "7.00pm", child: Text("7:00 PM")),
+                  DropdownMenuItem(value: "8.00pm", child: Text("8:00 PM")),
+                  DropdownMenuItem(value: "9.00pm", child: Text("9:00 PM")),
                 ],
-                onChanged: (value) => setState(() => _selectedStartTime = value ?? "9:00 am"),
+                onChanged: (value) => setState(() => _selectedStartTime = value ?? "9.00am"),
               ),
             ),
             Padding(
@@ -740,7 +837,7 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
             ),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _selectedEndTime,
+                initialValue: _selectedEndTime,
                 style: const TextStyle(fontSize: 14, color: Colors.black),
                 decoration: InputDecoration(
                   border: OutlineInputBorder(
@@ -763,12 +860,22 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
                   fillColor: Colors.white,
                 ),
                 items: const [
-                  DropdownMenuItem(value: "5:00 pm", child: Text("5:00 pm")),
-                  DropdownMenuItem(value: "6:00 pm", child: Text("6:00 pm")),
-                  DropdownMenuItem(value: "7:00 pm", child: Text("7:00 pm")),
-                  DropdownMenuItem(value: "8:00 pm", child: Text("8:00 pm")),
+                  DropdownMenuItem(value: "9.00am", child: Text("9:00 AM")),
+                  DropdownMenuItem(value: "10.00am", child: Text("10:00 AM")),
+                  DropdownMenuItem(value: "11.00am", child: Text("11:00 AM")),
+                  DropdownMenuItem(value: "12.00pm", child: Text("12:00 PM")),
+                  DropdownMenuItem(value: "1.00pm", child: Text("1:00 PM")),
+                  DropdownMenuItem(value: "2.00pm", child: Text("2:00 PM")),
+                  DropdownMenuItem(value: "3.00pm", child: Text("3:00 PM")),
+                  DropdownMenuItem(value: "4.00pm", child: Text("4:00 PM")),
+                  DropdownMenuItem(value: "5.00pm", child: Text("5:00 PM")),
+                  DropdownMenuItem(value: "6.00pm", child: Text("6:00 PM")),
+                  DropdownMenuItem(value: "7.00pm", child: Text("7:00 PM")),
+                  DropdownMenuItem(value: "8.00pm", child: Text("8:00 PM")),
+                  DropdownMenuItem(value: "9.00pm", child: Text("9:00 PM")),
+                  DropdownMenuItem(value: "10.00pm", child: Text("10:00 PM")),
                 ],
-                onChanged: (value) => setState(() => _selectedEndTime = value ?? "5:00 pm"),
+                onChanged: (value) => setState(() => _selectedEndTime = value ?? "5.00pm"),
               ),
             ),
           ],
@@ -814,12 +921,12 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
             filled: true,
             fillColor: Colors.white,
           ),
-          items: const [
-            DropdownMenuItem(value: "Plumbing", child: Text("Plumbing")),
-            DropdownMenuItem(value: "Locksmith", child: Text("Locksmith")),
-            DropdownMenuItem(value: "Electrical", child: Text("Electrical")),
-            DropdownMenuItem(value: "Carpentry", child: Text("Carpentry")),
-          ],
+          items: _availableServices.map((service) {
+            return DropdownMenuItem(
+              value: service,
+              child: Text(service),
+            );
+          }).toList(),
           onChanged: (value) {
             if (value != null && !_selectedServices.contains(value)) {
               setState(() {
@@ -839,137 +946,92 @@ class _UpdateInformationScreenState extends State<UpdateInformationScreen> {
     required TextEditingController controller,
   }) {
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F5F1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFD0E8E1), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0E7A60),
-                  shape: BoxShape.circle,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE8F5F1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFD0E8E1), width: 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF0E7A60),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                 ),
-                child: Icon(
-                  icon,
-                  color: Colors.white,
-                  size: 18,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade700,
+                height: 1.3,
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
+            ),
+            const SizedBox(height: 10),
+            Container(
+              height: 42,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300, width: 1),
+              ),
+              child: TextField(
+                controller: controller,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+                decoration: InputDecoration(
+                  border: InputBorder.none,
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.only(left: 8, right: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.attach_money,
+                          size: 18,
+                          color: Colors.grey.shade600,
+                        ),
+                      ],
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
                   ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade700,
-              height: 1.3,
             ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            height: 42,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade300, width: 1),
-            ),
-            child: TextField(
-              controller: controller,
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
-              ),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                prefixIcon: Padding(
-                  padding: const EdgeInsets.only(left: 8, right: 8),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.attach_money,
-                        size: 18,
-                        color: Colors.grey.shade600,
-                      ),
-                    ],
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 8,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class ServiceTag extends StatelessWidget {
-  final String text;
-  final Color color;
-  final Color dotColor;
-
-  const ServiceTag(
-      this.text, {
-        super.key,
-        required this.color,
-        required this.dotColor,
-      });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: dotColor,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
+          ],
+        )
     );
   }
 }

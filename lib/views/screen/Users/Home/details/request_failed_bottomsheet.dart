@@ -5,9 +5,9 @@ class RequestFailedBottomSheet extends StatelessWidget {
   final String providerName;
 
   const RequestFailedBottomSheet({
-    Key? key,
+    super.key,
     required this.providerName,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

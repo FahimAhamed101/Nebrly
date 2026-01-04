@@ -127,7 +127,7 @@ class AnalyticsSection extends StatelessWidget {
                 width: 1,
                 color: const Color(0x4D00CD49), // 30% opacity of #00CD49
               ),
-              SizedBox(width: 2),
+              const SizedBox(width: 2),
               // This Month data
               Expanded(
                 child: Column(

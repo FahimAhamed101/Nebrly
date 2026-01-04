@@ -84,7 +84,7 @@ class _CustomMultiSelectDropdownState extends State<CustomMultiSelectDropdown> {
                                         newSelected.remove(item);
                                         widget.onChanged(newSelected);
                                       },
-                                      child: Icon(
+                                      child: const Icon(
                                         Icons.close,
                                         size: 14,
                                         color: KoreColors.primary,
@@ -93,7 +93,7 @@ class _CustomMultiSelectDropdownState extends State<CustomMultiSelectDropdown> {
                                   ],
                                 ),
                               );
-                            }).toList(),
+                            }),
                             // Show count if more than 2 items selected
                             if (widget.selectedItems.length > 2)
                               Container(
@@ -170,7 +170,7 @@ class _CustomMultiSelectDropdownState extends State<CustomMultiSelectDropdown> {
                           ),
                         ),
                         if (isSelected)
-                          Icon(
+                          const Icon(
                             Icons.check_circle,
                             size: 20,
                             color: KoreColors.primary,

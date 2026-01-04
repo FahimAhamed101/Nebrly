@@ -177,7 +177,7 @@ class ClientFeedbackSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            feedback.comment.substring(0, maxChars) + '...',
+            '${feedback.comment.substring(0, maxChars)}...',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: KoreColors.textLight,
             ),

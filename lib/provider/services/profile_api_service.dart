@@ -7,7 +7,7 @@ import '../../models/user_model_provider.dart' show UserModel;
 import '../../utils/tokenService.dart';
 
 class ProfileApiService extends GetxService {
-  final String baseUrl = "https://naibrly-backend.onrender.com";
+  final String baseUrl = "https://naibrly-backend-main.onrender.com";
   final TokenService _tokenService = Get.find<TokenService>();
 
   Future<UserModel?> getProfile() async {
@@ -59,19 +59,29 @@ class ProfileApiService extends GetxService {
     File? businessLogo,
   }) async {
     try {
+      // Debug: Print where we're sending the request
+      print('=== UPDATE PROFILE REQUEST ===');
+      print('Base URL: $baseUrl');
+      print('Full URL: $baseUrl/api/users/provider/app/update-profile');
+      print('Method: PUT');
+
       final token = _tokenService.getToken();
       if (token == null) {
         throw Exception('No authentication token found');
       }
 
       // Create multipart request
+      final fullUrl = '$baseUrl/api/users/provider/app/update-profile';
+      print('Request URL: $fullUrl');
+
       var request = http.MultipartRequest(
         'PUT',
-        Uri.parse('$baseUrl/api/users/provider/update-profile'),
+        Uri.parse(fullUrl),
       );
 
       // Add headers
       request.headers['Authorization'] = 'Bearer $token';
+      print('Using token: ${token.substring(0, 20)}...');
 
       // Add text fields
       request.fields['firstName'] = firstName;
@@ -82,17 +92,29 @@ class ProfileApiService extends GetxService {
       request.fields['experience'] = experience;
       request.fields['maxBundleCapacity'] = maxBundleCapacity;
 
-      // Add services as JSON strings (as per API documentation)
+      // Debug print fields
+      print('Fields being sent:');
+      request.fields.forEach((key, value) {
+        print('  $key: $value');
+      });
+
+      // Add services as JSON strings
       if (servicesToAdd != null && servicesToAdd.isNotEmpty) {
-        request.fields['servicesToAdd'] = jsonEncode(servicesToAdd);
+        final servicesJson = jsonEncode(servicesToAdd);
+        request.fields['serviceToAdd'] = servicesJson; // SINGULAR 'serviceToAdd'
+        print('serviceToAdd: $servicesJson');
       }
 
       if (servicesToUpdate != null && servicesToUpdate.isNotEmpty) {
-        request.fields['servicesToUpdate'] = jsonEncode(servicesToUpdate);
+        final servicesJson = jsonEncode(servicesToUpdate);
+        request.fields['serviceToUpdate'] = servicesJson; // SINGULAR
+        print('serviceToUpdate: $servicesJson');
       }
 
       if (servicesToRemove != null && servicesToRemove.isNotEmpty) {
-        request.fields['servicesToRemove'] = jsonEncode(servicesToRemove);
+        final servicesJson = jsonEncode(servicesToRemove);
+        request.fields['serviceToRemove'] = servicesJson; // SINGULAR
+        print('serviceToRemove: $servicesJson');
       }
 
       // Add business logo if provided
@@ -105,19 +127,31 @@ class ProfileApiService extends GetxService {
             contentType: MediaType('image', 'jpeg'),
           ),
         );
+        print('Adding business logo: ${businessLogo.path}');
       }
 
-      // Send request
-      final streamedResponse = await request.send();
+      // Send request with timeout
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Request timeout - backend not responding');
+        },
+      );
+
       final response = await http.Response.fromStream(streamedResponse);
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        return responseData['success'] == true;
+        final success = responseData['success'] == true;
+        print('Update successful: $success');
+        print('Message: ${responseData['message']}');
+        return success;
       } else {
-        print('Update profile failed: ${response.statusCode}');
-        print('Response body: ${response.body}');
-        throw Exception('Failed to update profile: ${response.statusCode}');
+        print('Update failed with status: ${response.statusCode}');
+        throw Exception('Server returned ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
       print('Error updating profile: $e');

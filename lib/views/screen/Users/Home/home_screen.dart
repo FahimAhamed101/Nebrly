@@ -135,7 +135,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openPopularSearches() {
     if (_popularOverlay != null) return;
     final overlay = Overlay.of(context);
-    if (overlay == null) return;
     final RenderBox? box = _popularSearchFieldKey.currentContext?.findRenderObject() as RenderBox?;
     _popularFieldWidth = box?.size.width ?? 0;
 
@@ -246,7 +245,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.White,
         title: RichText(
-          text: TextSpan(
+          text: const TextSpan(
             text: "Welcome to user ",
             style: TextStyle(
               color: AppColors.black,
@@ -307,7 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           border: InputBorder.none,
                           isCollapsed: true,
                         ),
-                        style: TextStyle(color: AppColors.textcolor),
+                        style: const TextStyle(color: AppColors.textcolor),
                       ),
                     ),
                   ),
@@ -334,16 +333,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: AppColors.black.withOpacity(0.50),
                         ),
                       ),
-                      style: TextStyle(color: AppColors.textcolor),
+                      style: const TextStyle(color: AppColors.textcolor),
                     ),
                   ),
                   GestureDetector(
                     onTap: _performSearch,
                     child: Container(
                       width: 45,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: AppColors.primary,
-                        borderRadius: const BorderRadius.only(
+                        borderRadius: BorderRadius.only(
                           topRight: Radius.circular(12),
                           bottomRight: Radius.circular(12),
                         ),
@@ -365,7 +364,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Row(
                       children: [
-                        AppText(
+                        const AppText(
                           "Service Requests",
                           fontWeight: FontWeight.w500,
                           fontSize: 14,
@@ -400,7 +399,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Row(
                       children: [
-                        AppText(
+                        const AppText(
                           "Service Requests",
                           fontWeight: FontWeight.w500,
                           fontSize: 14,
@@ -452,7 +451,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Row(
                     children: [
-                      AppText(
+                      const AppText(
                         "Service Requests",
                         fontWeight: FontWeight.w500,
                         fontSize: 14,
@@ -492,7 +491,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Row(
                     children: [
-                      AppText(
+                      const AppText(
                         "Naibrly Bundles",
                         fontWeight: FontWeight.w500,
                         fontSize: 14,
@@ -508,7 +507,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             MaterialPageRoute(builder: (context) => const BundelsScreen()),
                           );
                         },
-                        child: AppText(
+                        child: const AppText(
                           "View All",
                           fontWeight: FontWeight.w500,
                           fontSize: 12,
@@ -654,7 +653,7 @@ class _HomeScreenState extends State<HomeScreen> {
             // Popular Services Section
             Row(
               children: [
-                AppText(
+                const AppText(
                   "Popular Services",
                   fontWeight: FontWeight.w500,
                   fontSize: 14,

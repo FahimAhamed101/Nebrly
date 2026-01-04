@@ -70,8 +70,8 @@ class _CustomTimePickerState extends State<CustomTimePicker> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: const [
+                const Row(
+                  children: [
                     Text(
                       'Set time',
                       style: TextStyle(

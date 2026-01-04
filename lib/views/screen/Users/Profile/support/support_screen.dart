@@ -34,7 +34,7 @@ class SupportsScreen extends StatelessWidget {
           ),
         ),
 
-        title: AppText(
+        title: const AppText(
           "Contact Support",
           fontSize: 20,
           fontWeight: FontWeight.w600,
@@ -46,11 +46,11 @@ class SupportsScreen extends StatelessWidget {
         top: false,
         bottom: true,
         child: SingleChildScrollView(
-          physics: BouncingScrollPhysics(),
-          padding: EdgeInsets.symmetric(horizontal: 18),
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 18),
           child: Obx(
             () => AnimatedSwitcher(
-              duration: Duration(milliseconds: 500),
+              duration: const Duration(milliseconds: 500),
               child: controller.isSent.value
                   ? SizedBox(
                 height: MediaQuery.of(context).size.height -
@@ -62,15 +62,15 @@ class SupportsScreen extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min, // shrink to content
                     children: [
                       SvgPicture.asset("assets/images/Group 758530841.svg"),
-                      SizedBox(height: 16),
-                      AppText(
+                      const SizedBox(height: 16),
+                      const AppText(
                         "Thank you!",
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: Colors.green,
                       ),
-                      SizedBox(height: 8),
-                      AppText(
+                      const SizedBox(height: 8),
+                      const AppText(
                         "Thank you! We have received your request\nand will get back to you soon.",
                         fontSize: 12,
                         fontWeight: FontWeight.w400,
@@ -107,7 +107,7 @@ class SupportsScreen extends StatelessWidget {
                                 maxLines: null, // ✅ allows infinite lines
                                 minLines: 6, // starts with 6 lines
                                 textInputAction: TextInputAction.newline,
-                                decoration: InputDecoration(
+                                decoration: const InputDecoration(
                                   hintText: "Compose your email...",
                                   hintStyle: TextStyle(
                                     color: AppColors.black50,
@@ -115,9 +115,9 @@ class SupportsScreen extends StatelessWidget {
                                   ),
                                   border: InputBorder.none, // remove default underline
                                   isCollapsed: true,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 15),
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 2, vertical: 15),
                                 ),
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 14,
                                   color: AppColors.Black,
                                   height: 1.5, // spacing between lines
@@ -130,7 +130,7 @@ class SupportsScreen extends StatelessWidget {
                             () => IosTapEffect(
                               onTap: () {
                                 controller.sendEmail();
-                                Future.delayed(Duration(seconds: 3), () {
+                                Future.delayed(const Duration(seconds: 3), () {
                                   Get.back();
                                 });
                               },
@@ -142,7 +142,7 @@ class SupportsScreen extends StatelessWidget {
                                 ),
                                 child: Center(
                                   child: controller.isLoading.value
-                                      ? SizedBox(
+                                      ? const SizedBox(
                                           height: 20,
                                           width: 20,
                                           child: CircularProgressIndicator(
@@ -157,8 +157,8 @@ class SupportsScreen extends StatelessWidget {
                                             SvgPicture.asset(
                                               "assets/icons/Paperplane icon.svg",
                                             ),
-                                            SizedBox(width: 8),
-                                            AppText(
+                                            const SizedBox(width: 8),
+                                            const AppText(
                                               "Send",
                                               fontSize: 14,
                                               fontWeight: FontWeight.w500,

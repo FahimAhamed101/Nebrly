@@ -363,7 +363,7 @@ class _CreateBundleBottomSheetState extends State<CreateBundleBottomSheet> {
   void showError(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: TextStyle(color: Colors.white)),
+        content: Text(message, style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.red,
       ),
     );
@@ -372,7 +372,7 @@ class _CreateBundleBottomSheetState extends State<CreateBundleBottomSheet> {
   void showSuccess(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message, style: TextStyle(color: Colors.white)),
+        content: Text(message, style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.green,
       ),
     );
@@ -434,7 +434,7 @@ class _CreateBundleBottomSheetState extends State<CreateBundleBottomSheet> {
             Expanded(
               child: Text(
                 selectedDate != null
-                    ? "${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}"
+                    ? "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}"
                     : hint,
                 style: TextStyle(
                   fontSize: 14,
@@ -478,7 +478,7 @@ class _CreateBundleBottomSheetState extends State<CreateBundleBottomSheet> {
             Expanded(
               child: Text(
                 selectedTime != null
-                    ? selectedTime!.format(context)
+                    ? selectedTime.format(context)
                     : hint,
                 style: TextStyle(
                   fontSize: 14,

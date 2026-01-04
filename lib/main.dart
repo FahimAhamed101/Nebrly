@@ -19,6 +19,7 @@ import 'package:naibrly/utils/tokenService.dart';
 import 'package:naibrly/views/base/bottomNav/auth_wrapper.dart';
 import 'package:naibrly/views/base/bottomNav/bottomNavWrapper.dart';
 import 'package:naibrly/views/screen/welcome/welcome_screen.dart';
+import 'package:naibrly/widgets/naibrly_now_bottom_sheet.dart';
 
 import 'AllRoutes/route.dart';
 import 'controller/Customer/request_controller.dart';
@@ -57,7 +58,8 @@ void main() async {
   Get.put(QuickChatController());
   Get.put(SocketService());
   Get.put(SocketController());
-  Get.put(ProfileController());
+  Get.put(UpdateprofileController());
+  Get.put(NaibrlyNowController());
   await Get.putAsync<RequestController>(() async {
     final controller = RequestController();
     // Manually call onInit AFTER token service is ready
@@ -66,7 +68,7 @@ void main() async {
   }, permanent: true);
 
   runApp(MyApp(
-    firstScreen: hasToken ? BottomMenuWrappers() : const WelcomeScreen(),
+    firstScreen: hasToken ? const BottomMenuWrappers() : const WelcomeScreen(),
   ));
 }
 
@@ -90,7 +92,7 @@ class MyApp extends StatelessWidget {
         bottom: true,
         child: child ?? const SizedBox.shrink(),
       ),
-        home: WelcomeScreen(),
+        home: const WelcomeScreen(),
         // initialRoute: AppRoutes.loginScreen,
         getPages: AppRoutes.pages
     );
