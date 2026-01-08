@@ -14,6 +14,7 @@ import 'package:naibrly/utils/tokenService.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:naibrly/utils/app_contants.dart';
+import '../../../../controller/payment_controller.dart';
 import '../../../../controller/quick_chat_controller.dart';
 import '../../../../controller/socket_controller.dart';
 import 'QuickChatPage.dart';
@@ -38,9 +39,9 @@ class UserRequestInboxScreen extends StatefulWidget {
 
 class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
   final ScrollController _scrollController = ScrollController();
-  final QuickChatController _quickChatController = Get.find<
-      QuickChatController>();
+  final QuickChatController _quickChatController = Get.find<QuickChatController>();
   final SocketController _socketController = Get.find<SocketController>();
+  final PaymentController _paymentController = Get.find<PaymentController>();
   final TokenService _tokenService = TokenService();
 
   bool _isWaitingForAcceptance = false;
@@ -58,8 +59,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
   bool _isSubmitting = false;
 
   String? _userRole;
-  bool _hasMoneyRequest = false;
-  bool _isCheckingMoneyRequest = true;
+  String? _userId;
 
   StreamSubscription? _messagesSubscription;
   StreamSubscription? _specificMessageSubscription;
@@ -68,17 +68,23 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
   bool _isLoadingQuickMessages = false;
   List<QuickMessage> _quickMessages = [];
 
-  // Money request details
-  Map<String, dynamic>? _moneyRequestDetails;
-  bool _isLoadingMoneyDetails = false;
+  // Add this for tracking initialization state
+  bool _isInitializing = false;
+
+  // Track if we're currently processing payment
+  bool _isProcessingPayment = false;
 
   @override
   void initState() {
     super.initState();
 
+    // Get user role and ID from token service
     _userRole = _tokenService.getUserRole();
+    _userId = _tokenService.getUserId();
+
     if (kDebugMode) {
       print('👤 User role: $_userRole');
+      print('👤 User ID: $_userId');
     }
 
     _isCancelled = widget.request.status.toLowerCase() == 'cancelled';
@@ -93,529 +99,77 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
       _showFeedback = true;
     }
 
-    // FIXED: Only start completion timer if status is 'accepted' AND user is customer
+    // Only start completion timer if status is 'completed' AND user is customer
     if (widget.request.status.toLowerCase() == 'completed' &&
         _userRole?.toLowerCase() == 'customer') {
       _startCompletionTimer();
     }
 
-    // Initialize in the right order
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _loadQuickMessages(); // Load quick messages first
-      await _initializeSocketConnection(); // Then initialize socket
-    });
-
-    _checkMoneyRequests().then((_) {
-      // Load money request details if exists
-      if (_hasMoneyRequest) {
-        _loadMoneyRequestDetails();
-      }
-    });
+    // Initialize everything in proper sequence
+    _initializeScreen();
   }
 
-  // Add this new method for customer checking with serviceRequestId
-  Future<bool> _checkMoneyRequestByServiceRequestIdForCustomer() async {
+  Future<void> _initializeScreen() async {
     try {
-      final token = _tokenService.getToken();
-      if (token == null) {
-        if (kDebugMode) {
-          print('❌ No authentication token found');
-        }
-        return false;
-      }
-
-      final url = Uri.parse('${AppConstants
-          .BASE_URL}/api/money-requests/customer?serviceRequestId=${widget
-          .requestId}');
-
-      if (kDebugMode) {
-        print('🔍 Customer ServiceRequestId API URL: $url');
-      }
-
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (kDebugMode) {
-        print('🔍 Response status: ${response.statusCode}');
-        print('🔍 Response body: ${response.body}');
-      }
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        final success = responseData['success'] ?? false;
-
-        if (success) {
-          final moneyRequests = responseData['data']?['moneyRequests'] ?? [];
-          if (moneyRequests.isNotEmpty) {
-            if (kDebugMode) {
-              print('✅ Found ${moneyRequests
-                  .length} money request(s) for serviceRequestId (customer)');
-
-              // Log payment status if available
-              for (var request in moneyRequests) {
-                final status = request['status'] ?? 'unknown';
-                final amount = request['amount'] ?? 0;
-                final providerAmount = request['commission']?['providerAmount'] ??
-                    0;
-                final paymentMethod = request['paymentDetails']?['paymentMethod'] ??
-                    'N/A';
-                final paidAt = request['paymentDetails']?['paidAt'] ??
-                    'Not paid';
-
-                print('💰 Money Request Status: $status');
-                print('💰 Amount: \$$amount');
-                print('💰 Provider Amount: \$$providerAmount');
-                print('💰 Payment Method: $paymentMethod');
-                print('💰 Paid At: $paidAt');
-              }
-            }
-            return true;
-          }
-        }
-      } else if (response.statusCode == 404) {
-        if (kDebugMode) {
-          print(
-              'ℹ️ No money request found for this serviceRequestId (customer)');
-        }
-        return false;
-      }
-
-      return false;
-    } catch (e) {
-      if (kDebugMode) {
-        print(
-            '❌ Error checking money request by serviceRequestId for customer: $e');
-      }
-      return false;
-    }
-  }
-
-  // Add this method to load money request details
-  // Add this method to load money request details
-  Future<void> _loadMoneyRequestDetails() async {
-    try {
-      if (widget.requestId == null) return;
-
       setState(() {
-        _isLoadingMoneyDetails = true;
+        _isInitializing = true;
       });
 
-      final token = _tokenService.getToken();
-      if (token == null) return;
+      // 1. Load quick messages first
+      await _loadQuickMessages();
 
-      final url = Uri.parse('${AppConstants.BASE_URL}/api/money-requests/customer?serviceRequestId=${widget.requestId}');
+      // 2. Check money requests using GetX controller
+      await _checkMoneyRequests();
 
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
+      // 3. Initialize socket connection and load chat history
+      await _initializeSocketConnection();
 
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        final success = responseData['success'] ?? false;
+      // 4. Load money request details if exists
+      if (_paymentController.hasMoneyRequest && widget.requestId != null) {
+        await _paymentController.loadMoneyRequestDetails(
+          serviceRequestId: widget.requestId!,
+        );
 
-        if (success) {
-          final moneyRequests = responseData['data']?['moneyRequests'] ?? [];
-          if (moneyRequests.isNotEmpty) {
-            final moneyRequest = moneyRequests[0];
-
-            // Parse and format the data properly
-            final formattedRequest = {
-              '_id': moneyRequest['_id']?.toString(),
-              'amount': moneyRequest['amount'] is int ? moneyRequest['amount'] : (moneyRequest['amount'] is num ? (moneyRequest['amount'] as num).toInt() : 0),
-              'status': moneyRequest['status']?.toString() ?? 'pending',
-              'totalAmount': moneyRequest['totalAmount'] is int ? moneyRequest['totalAmount'] : (moneyRequest['totalAmount'] is num ? (moneyRequest['totalAmount'] as num).toInt() : 0),
-              'tipAmount': moneyRequest['tipAmount'] is int ? moneyRequest['tipAmount'] : (moneyRequest['tipAmount'] is num ? (moneyRequest['tipAmount'] as num).toInt() : 0),
-              'description': moneyRequest['description']?.toString() ?? 'Payment for service',
-              'createdAt': moneyRequest['createdAt']?.toString(),
-              'dueDate': moneyRequest['dueDate']?.toString(),
-              'commission': moneyRequest['commission'] is Map ? Map<String, dynamic>.from(moneyRequest['commission']) : null,
-              'paymentDetails': moneyRequest['paymentDetails'] is Map ? Map<String, dynamic>.from(moneyRequest['paymentDetails']) : null,
-              'statusHistory': moneyRequest['statusHistory'] is List ? List<Map<String, dynamic>>.from(moneyRequest['statusHistory']) : [],
-              'provider': moneyRequest['provider'] is Map ? Map<String, dynamic>.from(moneyRequest['provider']) : null,
-            };
-
-            setState(() {
-              _moneyRequestDetails = formattedRequest;
-              _hasMoneyRequest = true;
-              // Show completion request if there's a money request
-              _showCompletionRequest = true;
-            });
-
-            if (kDebugMode) {
-              print('💰 Loaded money request details: $_moneyRequestDetails');
-              print('💰 Payment status: ${_moneyRequestDetails?['status']}');
-              print('💰 Is paid: ${(_moneyRequestDetails?['status']?.toString() ?? '').toLowerCase() == 'paid'}');
-            }
-          } else {
-            setState(() {
-              _moneyRequestDetails = null;
-              _hasMoneyRequest = false;
-              _showCompletionRequest = false;
-            });
-          }
-        }
-      } else if (response.statusCode == 404) {
-        // No money request found
-        setState(() {
-          _moneyRequestDetails = null;
-          _hasMoneyRequest = false;
-          _showCompletionRequest = false;
-        });
-
-        if (kDebugMode) {
-          print('ℹ️ No money request found for this service request');
+        // Check if we should show completion request
+        if (_paymentController.moneyRequestDetails != null) {
+          setState(() {
+            _showCompletionRequest = true;
+          });
         }
       }
+
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error loading money request details: $e');
+        print('❌ Error initializing screen: $e');
       }
-      setState(() {
-        _moneyRequestDetails = null;
-        _hasMoneyRequest = false;
-        _showCompletionRequest = false;
-      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to initialize: ${e.toString()}'),
+          backgroundColor: Colors.orange,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {
-          _isLoadingMoneyDetails = false;
+          _isInitializing = false;
         });
       }
     }
   }
 
-  // Update the _checkMoneyRequests method
   Future<void> _checkMoneyRequests() async {
     try {
-      setState(() {
-        _isCheckingMoneyRequest = true;
-      });
-
-      if (kDebugMode) {
-        print('💰 Checking for existing money requests...');
-        print('Request ID: ${widget.requestId}');
-        print('Bundle ID: ${widget.bundleId}');
-        print('Customer ID: ${widget.customerId}');
-      }
-
-      bool hasRequest = false;
-      final isProvider = _userRole?.toLowerCase() == 'provider';
-      final isCustomer = _userRole?.toLowerCase() == 'customer';
-
-      if (isProvider) {
-        // Provider checking logic
-        if (widget.bundleId != null && widget.customerId != null) {
-          if (kDebugMode) {
-            print('👷 Provider: Checking with bundle API (provider check)');
-          }
-          hasRequest = await _checkMoneyRequestByBundleIdForProvider();
-        } else if (widget.requestId != null) {
-          if (kDebugMode) {
-            print('👷 Provider: Checking with serviceRequestId API');
-          }
-          hasRequest = await _checkMoneyRequestByServiceRequestId();
-        }
-      }
-      else if (isCustomer) {
-        // Customer checking logic - updated with new endpoint
-        if (widget.bundleId != null && widget.customerId != null) {
-          if (kDebugMode) {
-            print('👤 Customer: Checking with bundle API');
-          }
-          hasRequest = await _checkMoneyRequestByBundleId();
-        } else if (widget.requestId != null) {
-          // Try both customer endpoints
-          if (kDebugMode) {
-            print(
-                '👤 Customer: Checking with serviceRequestId API (new endpoint)');
-          }
-
-          // Try the new endpoint first
-          hasRequest = await _checkMoneyRequestByServiceRequestIdForCustomer();
-
-          // If not found, try the old endpoint
-          if (!hasRequest) {
-            if (kDebugMode) {
-              print('👤 Customer: Checking with requestId API (fallback)');
-            }
-            hasRequest = await _checkMoneyRequestByRequestId();
-          }
-        }
-      } else {
-        if (kDebugMode) {
-          print('ℹ️ No suitable API endpoint available for current parameters');
-        }
-        hasRequest = false;
-      }
-
-      setState(() {
-        _hasMoneyRequest = hasRequest;
-        _isCheckingMoneyRequest = false;
-      });
-
-      if (kDebugMode) {
-        print('💰 Money request check result: $_hasMoneyRequest');
-      }
+      await _paymentController.checkMoneyRequests(
+        userRole: _userRole,
+        bundleId: widget.bundleId,
+        requestId: widget.requestId,
+        customerId: widget.customerId,
+      );
     } catch (e) {
       if (kDebugMode) {
         print('❌ Error checking money requests: $e');
       }
-      setState(() {
-        _hasMoneyRequest = false;
-        _isCheckingMoneyRequest = false;
-      });
-    }
-  }
-
-  Future<bool> _checkMoneyRequestByBundleIdForProvider() async {
-    try {
-      final token = _tokenService.getToken();
-      if (token == null) {
-        if (kDebugMode) {
-          print('❌ No authentication token found');
-        }
-        return false;
-      }
-
-      // Note: For providers checking, you might need a different endpoint
-      // If your API doesn't have a provider endpoint for bundles,
-      // you can use the customer endpoint or requestId endpoint
-      final url = Uri.parse('${AppConstants
-          .BASE_URL}/api/money-requests/provider?bundleId=${widget
-          .bundleId}&customerId=${widget.customerId}');
-
-      if (kDebugMode) {
-        print('🔍 Provider Bundle API URL: $url');
-      }
-
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (kDebugMode) {
-        print('🔍 Response status: ${response.statusCode}');
-      }
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        final success = responseData['success'] ?? false;
-
-        if (success) {
-          final moneyRequests = responseData['data']?['moneyRequests'] ?? [];
-          if (moneyRequests.isNotEmpty) {
-            if (kDebugMode) {
-              print('✅ Found ${moneyRequests
-                  .length} money request(s) for bundle (provider)');
-            }
-            return true;
-          }
-        }
-      } else if (response.statusCode == 404) {
-        if (kDebugMode) {
-          print('ℹ️ No money request found for this bundle (provider)');
-        }
-        return false;
-      }
-
-      return false;
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ Error checking money request by bundleId for provider: $e');
-      }
-      return false;
-    }
-  }
-
-  Future<bool> _checkMoneyRequestByServiceRequestId() async {
-    try {
-      final token = _tokenService.getToken();
-      if (token == null) {
-        if (kDebugMode) {
-          print('❌ No authentication token found');
-        }
-        return false;
-      }
-
-      final url = Uri.parse('${AppConstants
-          .BASE_URL}/api/money-requests/provider?serviceRequestId=${widget
-          .requestId}');
-
-      if (kDebugMode) {
-        print('🔍 Provider API URL: $url');
-      }
-
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (kDebugMode) {
-        print('🔍 Response status: ${response.statusCode}');
-      }
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        final success = responseData['success'] ?? false;
-
-        if (success) {
-          final moneyRequests = responseData['data']?['moneyRequests'] ?? [];
-          if (moneyRequests.isNotEmpty) {
-            if (kDebugMode) {
-              print('✅ Found ${moneyRequests
-                  .length} money request(s) for serviceRequestId');
-            }
-            return true;
-          }
-        }
-      } else if (response.statusCode == 404) {
-        if (kDebugMode) {
-          print('ℹ️ No money request found for this serviceRequestId');
-        }
-        return false;
-      }
-
-      return false;
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ Error checking money request by serviceRequestId: $e');
-      }
-      return false;
-    }
-  }
-
-  Future<bool> _checkMoneyRequestByBundleId() async {
-    try {
-      final token = _tokenService.getToken();
-      if (token == null) {
-        if (kDebugMode) {
-          print('❌ No authentication token found');
-        }
-        return false;
-      }
-
-      final url = Uri.parse('${AppConstants
-          .BASE_URL}/api/money-requests/customer?bundleId=${widget
-          .bundleId}&customerId=${widget.customerId}');
-
-      if (kDebugMode) {
-        print('🔍 Bundle API URL: $url');
-      }
-
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (kDebugMode) {
-        print('🔍 Response status: ${response.statusCode}');
-      }
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        final success = responseData['success'] ?? false;
-
-        if (success) {
-          final moneyRequests = responseData['data']?['moneyRequests'] ?? [];
-          if (moneyRequests.isNotEmpty) {
-            if (kDebugMode) {
-              print('✅ Found ${moneyRequests
-                  .length} money request(s) for bundle');
-            }
-            return true;
-          }
-        }
-      } else if (response.statusCode == 404) {
-        if (kDebugMode) {
-          print('ℹ️ No money request found for this bundle');
-        }
-        return false;
-      }
-
-      return false;
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ Error checking money request by bundleId: $e');
-      }
-      return false;
-    }
-  }
-
-  Future<bool> _checkMoneyRequestByRequestId() async {
-    try {
-      final token = _tokenService.getToken();
-      if (token == null) {
-        if (kDebugMode) {
-          print('❌ No authentication token found');
-        }
-        return false;
-      }
-
-      final url = Uri.parse(
-          '${AppConstants.BASE_URL}/api/money-requests/request/${widget
-              .requestId}');
-
-      if (kDebugMode) {
-        print('🔍 Request ID API URL: $url');
-      }
-
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (kDebugMode) {
-        print('🔍 Response status: ${response.statusCode}');
-      }
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        final success = responseData['success'] ?? false;
-
-        if (success) {
-          final moneyRequests = responseData['data']?['moneyRequests'] ?? [];
-          if (moneyRequests.isNotEmpty) {
-            if (kDebugMode) {
-              print('✅ Found ${moneyRequests
-                  .length} money request(s) for requestId');
-            }
-            return true;
-          }
-        }
-      } else if (response.statusCode == 404) {
-        if (kDebugMode) {
-          print('ℹ️ No money request found for this requestId');
-        }
-        return false;
-      }
-
-      return false;
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ Error checking money request by requestId: $e');
-      }
-      return false;
     }
   }
 
@@ -623,19 +177,17 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
     try {
       if (kDebugMode) {
         print('🔗 Initializing socket connection...');
-        print('Request ID: ${widget.requestId}');
-        print('Bundle ID: ${widget.bundleId}');
-        print('Customer ID: ${widget.customerId}');
+        print('User Role: $_userRole');
+        print('User ID: $_userId');
       }
 
+      // Ensure socket is connected
       if (!_socketController.isConnected) {
-        if (kDebugMode) {
-          print('🔄 Socket not connected, reconnecting...');
-        }
         await _socketController.reconnect();
         await Future.delayed(const Duration(seconds: 1));
       }
 
+      // Join the conversation
       await _socketController.joinConversation(
         requestId: widget.requestId,
         bundleId: widget.bundleId,
@@ -646,19 +198,16 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
         print('✅ Joined conversation successfully');
       }
 
-      // Load existing messages immediately after joining
+      // Load existing messages immediately
       _loadExistingMessages();
 
-      // Setup message listener AFTER loading existing messages
+      // Setup message listeners
       _setupMessageListener();
 
       setState(() {
         _isLoadingChatHistory = false;
       });
 
-      if (kDebugMode) {
-        print('✅ Socket connection initialized successfully');
-      }
     } catch (e) {
       if (kDebugMode) {
         print('❌ Error initializing socket connection: $e');
@@ -668,14 +217,12 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
         _isLoadingChatHistory = false;
       });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load messages: $e'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to connect to chat: ${e.toString()}'),
+          backgroundColor: Colors.orange,
+        ),
+      );
     }
   }
 
@@ -685,15 +232,8 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
         _isLoadingQuickMessages = true;
       });
 
-      // Load quick messages from API via controller
       await _quickChatController.loadQuickMessages();
-
-      // Get messages from controller (these come from API)
       final messagesFromApi = _quickChatController.quickMessages.toList();
-
-      if (kDebugMode) {
-        print('📋 Loaded ${messagesFromApi.length} quick messages from API');
-      }
 
       setState(() {
         _quickMessages = messagesFromApi;
@@ -702,18 +242,9 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
       if (kDebugMode) {
         print('❌ Error loading quick messages: $e');
       }
-
-      // If API fails, show empty list
       setState(() {
         _quickMessages = [];
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to load quick questions: $e'),
-          backgroundColor: Colors.orange,
-        ),
-      );
     } finally {
       setState(() {
         _isLoadingQuickMessages = false;
@@ -730,20 +261,15 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
       );
 
       if (kDebugMode) {
-        print('📜 UI: Loading ${existingMessages
-            .length} existing messages from controller');
-        if (existingMessages.isNotEmpty) {
-          print('📜 UI: Sample message content: ${existingMessages
-              .first['content']}');
-        }
+        print('📜 Loading ${existingMessages.length} existing messages');
       }
 
       if (existingMessages.isNotEmpty) {
         final newMessages = existingMessages
-            .map((msg) => ChatMessage.fromSocketData(msg))
+            .map((msg) => ChatMessage.fromSocketData(msg, _userId))
             .toList();
 
-        // Sort messages by timestamp to ensure correct order
+        // Sort by timestamp
         newMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
         if (mounted) {
@@ -751,59 +277,67 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
             _messages = newMessages;
           });
 
-          if (kDebugMode) {
-            print('✅ UI: Updated UI with ${_messages.length} messages');
-            if (_messages.isNotEmpty) {
-              print('✅ UI: Latest message: ${_messages.last.text}');
-              print('✅ UI: Latest timestamp: ${_messages.last.timestamp}');
-            }
-          }
-
-          // Scroll to bottom after a short delay to ensure UI is updated
+          // Scroll to bottom after UI update
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_scrollController.hasClients && _messages.isNotEmpty) {
-              Future.delayed(const Duration(milliseconds: 100), () {
-                if (_scrollController.hasClients) {
-                  _scrollController.animateTo(
-                    _scrollController.position.maxScrollExtent,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOut,
-                  );
-                }
-              });
-            }
+            _scrollToBottom();
           });
         }
-      } else if (_messages.isEmpty) {
-        // Only show default messages if we truly have no messages
-        if (mounted) {
+      } else {
+        // Only show default messages if truly empty
+        if (mounted && _messages.isEmpty) {
           setState(() {
-            _messages = [
-              ChatMessage(
-                text: "Your service request has been confirmed!",
-                isFromUser: false,
-                isFromProvider: true,
-                timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-              ),
-              ChatMessage(
-                text: "Thank you for confirming your order! I'll begin work shortly.",
-                isFromUser: true,
-                isFromProvider: false,
-                timestamp: DateTime.now().subtract(const Duration(minutes: 4)),
-              ),
-            ];
+            _messages = _getDefaultMessages();
           });
-        }
-
-        if (kDebugMode) {
-          print('ℹ️ UI: No existing messages, using default welcome message');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ UI: Error loading existing messages: $e');
+        print('❌ Error loading existing messages: $e');
       }
     }
+  }
+
+  List<ChatMessage> _getDefaultMessages() {
+    final isCustomer = _userRole?.toLowerCase() == 'customer';
+    final isProvider = _userRole?.toLowerCase() == 'provider';
+
+    if (isCustomer) {
+      return [
+        ChatMessage(
+          text: "Your service request has been confirmed!",
+          isFromUser: false,
+          isFromProvider: true,
+          timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
+          senderId: 'system',
+        ),
+        ChatMessage(
+          text: "Thank you for confirming your order! I'll begin work shortly.",
+          isFromUser: true,
+          isFromProvider: false,
+          timestamp: DateTime.now().subtract(const Duration(minutes: 4)),
+          senderId: _userId,
+        ),
+      ];
+    } else if (isProvider) {
+      return [
+        ChatMessage(
+          text: "You have accepted the service request!",
+          isFromUser: false,
+          isFromProvider: true,
+          timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
+          senderId: 'system',
+        ),
+        ChatMessage(
+          text: "Please contact the customer for details.",
+          isFromUser: false,
+          isFromProvider: true,
+          timestamp: DateTime.now().subtract(const Duration(minutes: 4)),
+          senderId: 'system',
+        ),
+      ];
+    }
+
+    return [];
   }
 
   void _setupMessageListener() {
@@ -811,79 +345,78 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
     _messagesSubscription?.cancel();
     _specificMessageSubscription?.cancel();
 
-    // Listen for new messages from the general stream
+    // Listen for general message stream updates
     _messagesSubscription = _socketController.messagesChangeStream.listen((_) {
       if (kDebugMode) {
         print('📨 General stream update received');
       }
-
-      // Always reload messages when stream emits
       if (mounted) {
-        if (kDebugMode) {
-          print('🔄 UI: Reloading messages due to stream update');
-        }
         _loadExistingMessages();
       }
     });
 
-    // Also listen for specific message events
-    _specificMessageSubscription =
-        _socketController.messageStream.listen((message) {
-          if (kDebugMode) {
-            print('📨 Specific message received: ${message['content']}');
-          }
+    // Listen for specific new messages
+    _specificMessageSubscription = _socketController.messageStream.listen((message) {
+      if (kDebugMode) {
+        print('📨 Specific message received: ${message['content']}');
+      }
 
-          // Check if this message belongs to our conversation
-          final requestId = message['requestId'];
-          final bundleId = message['bundleId'];
-          final customerId = message['customerId'];
+      // Check if this message belongs to our conversation
+      final belongsToConversation = _checkMessageBelongsToConversation(message);
 
-          bool belongsToThisConversation = false;
-
-          if (widget.requestId != null && requestId == widget.requestId) {
-            belongsToThisConversation = true;
-          } else if (widget.bundleId != null && bundleId == widget.bundleId) {
-            belongsToThisConversation = true;
-          } else
-          if (widget.customerId != null && customerId == widget.customerId) {
-            belongsToThisConversation = true;
-          }
-
-          if (belongsToThisConversation && mounted) {
-            if (kDebugMode) {
-              print('✅ Message belongs to this conversation, reloading...');
-            }
-            _loadExistingMessages();
-          }
-        });
+      if (belongsToConversation && mounted) {
+        if (kDebugMode) {
+          print('✅ Message belongs to this conversation, updating...');
+        }
+        _loadExistingMessages();
+      }
+    });
 
     if (kDebugMode) {
       print('✅ Message listeners set up');
     }
   }
 
+  bool _checkMessageBelongsToConversation(Map<String, dynamic> message) {
+    final requestId = message['requestId']?.toString();
+    final bundleId = message['bundleId']?.toString();
+    final customerId = message['customerId']?.toString();
+
+    if (widget.requestId != null && requestId == widget.requestId) {
+      return true;
+    }
+
+    if (widget.bundleId != null && bundleId == widget.bundleId) {
+      return true;
+    }
+
+    if (widget.customerId != null && customerId == widget.customerId) {
+      return true;
+    }
+
+    return false;
+  }
+
   void _sendQuickMessage(QuickMessage message) async {
     try {
       if (kDebugMode) {
-        print('📤 UI: Sending quick message: ${message.message}');
-        print('👤 User role: $_userRole');
+        print('📤 Sending quick message: ${message.message}');
       }
 
-      // Get user role from token service
       final isProvider = _userRole?.toLowerCase() == 'provider';
       final isCustomer = _userRole?.toLowerCase() == 'customer';
 
-      // Validate user role
       if (!isProvider && !isCustomer) {
         throw Exception('User role not recognized');
       }
 
-      // Add a temporary message to show immediate feedback
+      // Add temporary message for immediate feedback
       final tempMessage = ChatMessage(
         text: message.message,
         isFromUser: isCustomer,
         isFromProvider: isProvider,
         timestamp: DateTime.now(),
+        senderId: _userId,
         isQuickChat: true,
         isPending: true,
       );
@@ -892,10 +425,9 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
         _messages.add(tempMessage);
       });
 
-      // Scroll to show the new message
       _scrollToBottom();
 
-      // Use the correct sender role based on user type
+      // Send the quick chat message
       await _socketController.sendQuickChat(
         quickChatId: message.id ?? '',
         requestId: widget.requestId,
@@ -906,33 +438,27 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
       // Update controller with usage count
       _quickChatController.sendQuickMessage(message);
 
-      if (kDebugMode) {
-        print('✅ UI: Quick message sent by ${isProvider
-            ? 'provider'
-            : 'customer'}');
-      }
-
-      // Remove the pending status after sending
+      // Remove pending status
       setState(() {
         final index = _messages.indexWhere((msg) =>
-        msg.isPending && msg.text == message.message);
+        msg.isPending && msg.text == message.message && msg.senderId == _userId);
         if (index != -1) {
           _messages[index] = _messages[index].copyWith(isPending: false);
         }
       });
 
-      // Wait a bit and reload all messages to ensure sync with server
+      // Reload messages after a delay
       await Future.delayed(const Duration(milliseconds: 500));
       _loadExistingMessages();
     } catch (e) {
       if (kDebugMode) {
-        print('❌ UI: Error sending quick message: $e');
+        print('❌ Error sending quick message: $e');
       }
 
-      // Remove the pending message if there was an error
+      // Remove the pending message on error
       setState(() {
         _messages.removeWhere((msg) =>
-        msg.isPending && msg.text == message.message);
+        msg.isPending && msg.text == message.message && msg.senderId == _userId);
       });
 
       if (mounted) {
@@ -960,15 +486,14 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
   void _navigateToQuickChatPage() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) =>
-            QuickChatPage(
-              requestId: widget.requestId,
-              bundleId: widget.bundleId,
-              customerId: widget.customerId,
-              serviceName: widget.request.serviceName,
-              providerName: widget.request.provider?.fullName ??
-                  widget.request.providerName ?? 'Provider',
-            ),
+        builder: (context) => QuickChatPage(
+          requestId: widget.requestId,
+          bundleId: widget.bundleId,
+          customerId: widget.customerId,
+          serviceName: widget.request.serviceName,
+          providerName: widget.request.provider?.fullName ??
+              widget.request.providerName ?? 'Provider',
+        ),
       ),
     );
   }
@@ -1002,13 +527,158 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
     });
   }
 
-  void _handleAcceptCompletion() {
-    // Navigate to review and confirm screen
-    // Navigator.of(context).push(
-    //   MaterialPageRoute(
-    //     builder: (context) => ReviewConfirmScreen(request: widget.request),
-    ///  ),
-    // );
+  Future<void> _cancelServiceRequest() async {
+    if (widget.requestId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid request ID'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await _paymentController.cancelServiceRequest(requestId: widget.requestId!);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Request cancelled successfully!'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Error cancelling request: $e');
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to cancel request: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Future<void> _cancelBundle() async {
+    if (widget.bundleId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid bundle ID'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await _paymentController.cancelBundle(bundleId: widget.bundleId!);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bundle cancelled successfully!'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Error cancelling bundle: $e');
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to cancel bundle: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _showCancelConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.cancel_outlined, color: Colors.red[700], size: 28),
+            const SizedBox(width: 12),
+            const Text('Cancel Request?'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.request.isBundle
+                  ? 'Are you sure you want to cancel this bundle?'
+                  : 'Are you sure you want to cancel this service request?',
+              style: const TextStyle(fontSize: 15),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange[200]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber, color: Colors.orange[700], size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'This action cannot be undone. The ${widget.request.isBundle ? 'bundle' : 'request'} will be cancelled immediately.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.orange[900],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Keep Request'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (widget.request.isBundle) {
+                _cancelBundle();
+              } else {
+                _cancelServiceRequest();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[600],
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Yes, Cancel'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _handleCancelCompletion() {
@@ -1026,9 +696,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
 
   void _showTaskCompletionOverlayDialog() {
     final isProvider = _userRole?.toLowerCase() == 'provider';
-    final isCustomer = _userRole?.toLowerCase() == 'customer';
 
-    // Only providers should create money requests
     if (!isProvider) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -1039,7 +707,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
       return;
     }
 
-    if (_hasMoneyRequest) {
+    if (_paymentController.hasMoneyRequest) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Money request already created for this task.'),
@@ -1068,122 +736,35 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
         _isSubmitting = true;
       });
 
-      final token = _tokenService.getToken();
-      if (token == null) {
-        throw Exception('User not authenticated');
-      }
-
       final isProvider = _userRole?.toLowerCase() == 'provider';
-      final isCustomer = _userRole?.toLowerCase() == 'customer';
-
       if (!isProvider) {
         throw Exception('Only providers can create money requests');
       }
 
-      // Determine which API endpoint to use based on available parameters
-      String apiUrl;
-      Map<String, dynamic> requestBody;
-
-      if (widget.bundleId != null && widget.customerId != null) {
-        // Use bundle API endpoint for providers
-        apiUrl = '${AppConstants.BASE_URL}/api/money-requests/create';
-        requestBody = {
-          'amount': amount,
-          'bundleId': widget.bundleId,
-          'customerId': widget.customerId
-        };
-
-        if (kDebugMode) {
-          print('💰 Using BUNDLE API for provider money request');
-          print('Bundle ID: ${widget.bundleId}');
-          print('Customer ID: ${widget.customerId}');
-        }
-      } else if (widget.requestId != null) {
-        // Use serviceRequestId API endpoint
-        apiUrl = '${AppConstants.BASE_URL}/api/money-requests/create';
-        requestBody = {
-          'serviceRequestId': widget.requestId,
-          'amount': amount,
-        };
-
-        if (kDebugMode) {
-          print('💰 Using SERVICE REQUEST ID API for provider money request');
-          print('Service Request ID: ${widget.requestId}');
-        }
-      } else {
-        throw Exception(
-            'No valid parameters available for creating money request');
-      }
-
-      final url = Uri.parse(apiUrl);
-
-      if (kDebugMode) {
-        print('💰 Provider creating money request...');
-        print('URL: $url');
-        print('Request Body: $requestBody');
-        print('Amount: $amount');
-      }
-
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode(requestBody),
+      await _paymentController.createMoneyRequest(
+        amount: amount,
+        bundleId: widget.bundleId,
+        serviceRequestId: widget.requestId,
       );
 
-      if (kDebugMode) {
-        print('💰 API Response Status: ${response.statusCode}');
-        print('💰 API Response Body: ${response.body}');
+      _hideTaskCompletionOverlay();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Money request created successfully! Amount: \$${amount.toStringAsFixed(2)}'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+      // Refresh data
+      await _checkMoneyRequests();
+      if (widget.requestId != null) {
+        await _paymentController.loadMoneyRequestDetails(
+          serviceRequestId: widget.requestId!,
+        );
       }
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseData = jsonDecode(response.body);
-        final success = responseData['success'] ?? false;
-
-        if (success) {
-          setState(() {
-            _hasMoneyRequest = true;
-          });
-
-          _hideTaskCompletionOverlay();
-
-          // Show success message with amount
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  'Money request created successfully! Amount: \$${amount
-                      .toStringAsFixed(2)}'),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 3),
-            ),
-          );
-
-          if (kDebugMode) {
-            print('✅ Money request created successfully');
-            print('Response: $responseData');
-          }
-
-          // Optionally, refresh the money request check
-          await _checkMoneyRequests();
-          await _loadMoneyRequestDetails();
-        } else {
-          final errorMessage = responseData['message'] ??
-              'Failed to create money request';
-          throw Exception(errorMessage);
-        }
-      } else {
-        final errorData = jsonDecode(response.body);
-        final errorMessage = errorData['message'] ??
-            'Failed to create money request (Status: ${response.statusCode})';
-
-        if (kDebugMode) {
-          print('❌ Money request creation failed: $errorMessage');
-        }
-
-        throw Exception(errorMessage);
-      }
     } catch (e) {
       if (kDebugMode) {
         print('❌ Exception creating money request: $e');
@@ -1218,7 +799,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
       return;
     }
 
-    if (_hasMoneyRequest) {
+    if (_paymentController.hasMoneyRequest) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Money request already created for this task.'),
@@ -1250,20 +831,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
       return;
     }
 
-    // Validate amount is reasonable (optional)
-    if (widget.request.averagePrice > 0 &&
-        amount > widget.request.averagePrice * 5) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              'Amount (\$$amount) seems high. Average price is \$${widget
-                  .request.averagePrice.toInt()}.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      // Continue anyway - just warning
-    }
-
     _createMoneyRequest(amount);
   }
 
@@ -1287,8 +854,162 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
   void _handleCopyToClipboard(String text, String label) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$label copied to clipboard: $text'),
+        content: Text('$label copied to clipboard'),
         backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  Future<void> _completeServiceRequest() async {
+    if (widget.requestId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid request ID'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await _paymentController.completeServiceRequest(requestId: widget.requestId!);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Request marked as completed successfully!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Error completing request: $e');
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to complete request: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Future<void> _completeBundle() async {
+    if (widget.bundleId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid bundle ID'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await _paymentController.completeBundle(bundleId: widget.bundleId!);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bundle marked as completed successfully!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Error completing bundle: $e');
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to complete bundle: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _showCompleteConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.check_circle_outline, color: Colors.green[700], size: 28),
+            const SizedBox(width: 12),
+            const Text('Mark as Completed?'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.request.isBundle
+                  ? 'Are you sure you want to mark this bundle as completed?'
+                  : 'Are you sure you want to mark this service request as completed?',
+              style: const TextStyle(fontSize: 15),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue[200]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'This will mark the ${widget.request.isBundle ? 'bundle' : 'request'} as completed and notify the customer.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.blue[900],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (widget.request.isBundle) {
+                _completeBundle();
+              } else {
+                _completeServiceRequest();
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green[600],
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Mark as Completed'),
+          ),
+        ],
       ),
     );
   }
@@ -1318,6 +1039,26 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isInitializing) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF7F9FB),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              AppText(
+                'Loading conversation...',
+                fontSize: 14,
+                color: AppColors.DarkGray,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final providerName = widget.request.provider?.fullName ??
         widget.request.providerName ?? 'Provider';
     final providerImage = widget.request.providerImage ??
@@ -1333,8 +1074,9 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
     final isProvider = _userRole?.toLowerCase() == 'provider';
     final isCustomer = _userRole?.toLowerCase() == 'customer';
 
-    // Disable Task Done button if money request exists or still checking
-    final disableTaskDone = _hasMoneyRequest || _isCheckingMoneyRequest;
+    // Use GetX controller values
+    final disableTaskDone = _paymentController.hasMoneyRequest ||
+        _paymentController.isCheckingMoneyRequest;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FB),
@@ -1352,83 +1094,142 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
           color: AppColors.Black,
         ),
         actions: [
-          if (isProvider && !_isCancelled && !_isWaitingForAcceptance) ...[
-            Container(
-              margin: const EdgeInsets.only(right: 16),
-              child: TextButton(
-                onPressed: (_isWaitingForAcceptance || _showFeedback ||
-                    _isCancelled || disableTaskDone) ? null : () {
-                  if (isCompleted) {
-                    _showTaskCompletionOverlayDialog();
-                  } else {
-                    _showCancelRequestDialog();
-                  }
-                },
-                style: TextButton.styleFrom(
-                  backgroundColor: (_isWaitingForAcceptance || _showFeedback ||
-                      _isCancelled || disableTaskDone)
-                      ? Colors.grey[300]
-                      : const Color(0xFFFEEEEE),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: _isCheckingMoneyRequest
-                    ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
-                  ),
-                )
-                    : AppText(
-                  _isCancelled ? 'Cancelled' : (isCompleted ? (_hasMoneyRequest
-                      ? 'Paid'
-                      : 'Task Done') : 'Cancel'),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: (_isWaitingForAcceptance || _showFeedback ||
-                      _isCancelled || disableTaskDone)
-                      ? Colors.grey[600]
-                      : const Color(0xFFF34F4F),
-                ),
-              ),
-            ),
-          ] else
-            if (isCustomer && !_isCancelled && !_isWaitingForAcceptance) ...[
-              Container(
-                margin: const EdgeInsets.only(right: 16),
-                child: TextButton(
-                  onPressed: (_isWaitingForAcceptance || _showFeedback ||
-                      _isCancelled) ? null : () {
-                    _showCancelRequestDialog();
-                  },
-                  style: TextButton.styleFrom(
-                    backgroundColor: (_isWaitingForAcceptance ||
-                        _showFeedback || _isCancelled)
-                        ? Colors.grey[300]
-                        : const Color(0xFFFEEEEE),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+          if (!_isCancelled && !_isWaitingForAcceptance) ...[
+            // PROVIDER ROLE
+            if (isProvider) ...[
+              // Show "Accept" button for accepted requests (to mark as completed)
+              if (isAccepted && !isCompleted) ...[
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  child: TextButton.icon(
+                    onPressed: _paymentController.isCompletingRequest ? null : _showCompleteConfirmationDialog,
+                    icon: _paymentController.isCompletingRequest
+                        ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                        : const Icon(Icons.check_circle, size: 18),
+                    label: Text(
+                      _paymentController.isCompletingRequest ? 'Processing...' : 'Accept',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                    style: TextButton.styleFrom(
+                      backgroundColor: _paymentController.isCompletingRequest
+                          ? Colors.grey[400]
+                          : Colors.green[600],
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
-                  child: AppText(
-                    _isCancelled ? 'Cancelled' : 'Cancel',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: (_isWaitingForAcceptance || _showFeedback ||
-                        _isCancelled)
-                        ? Colors.grey[600]
-                        : const Color(0xFFF34F4F),
+                ),
+              ],
+
+              // Show "Task Done" button for completed requests (to create money request)
+              if (isCompleted) ...[
+                Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  child: TextButton(
+                    onPressed: (_showFeedback || disableTaskDone) ? null : () {
+                      _showTaskCompletionOverlayDialog();
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: (_showFeedback || disableTaskDone)
+                          ? Colors.grey[300]
+                          : const Color(0xFFFEEEEE),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: _paymentController.isCheckingMoneyRequest
+                        ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                      ),
+                    )
+                        : AppText(
+                      _paymentController.hasMoneyRequest ? 'Paid' : 'Task Done',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: (_showFeedback || disableTaskDone)
+                          ? Colors.grey[600]
+                          : const Color(0xFFF34F4F),
+                    ),
                   ),
                 ),
-              ),
+              ],
+
+              // Always show Cancel button for non-completed, non-cancelled requests
+              if (!isCompleted) ...[
+                Container(
+                  margin: const EdgeInsets.only(right: 16),
+                  child: TextButton(
+                    onPressed: _paymentController.isCompletingRequest ? null : _showCancelConfirmationDialog,
+                    style: TextButton.styleFrom(
+                      backgroundColor: _paymentController.isCompletingRequest
+                          ? Colors.grey[300]
+                          : const Color(0xFFFEEEEE),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: AppText(
+                      'Cancel',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _paymentController.isCompletingRequest
+                          ? Colors.grey[600]
+                          : const Color(0xFFF34F4F),
+                    ),
+                  ),
+                ),
+              ],
             ],
+
+            // CUSTOMER ROLE
+            if (isCustomer) ...[
+              // Always show Cancel button for non-completed, non-cancelled requests
+              if (!isCompleted) ...[
+                Container(
+                  margin: const EdgeInsets.only(right: 16),
+                  child: TextButton(
+                    onPressed: _paymentController.isCompletingRequest ? null : _showCancelConfirmationDialog,
+                    style: TextButton.styleFrom(
+                      backgroundColor: _paymentController.isCompletingRequest
+                          ? Colors.grey[300]
+                          : const Color(0xFFFEEEEE),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: AppText(
+                      'Cancel',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _paymentController.isCompletingRequest
+                          ? Colors.grey[600]
+                          : const Color(0xFFF34F4F),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ],
         ],
       ),
       body: Stack(
@@ -1446,22 +1247,21 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                   // Show loading state for chat messages
                   if (_isLoadingChatHistory)
                     _buildChatLoadingState()
+                  else if (_showFeedback)
+                    Column(
+                      children: [
+                        SizedBox(
+                          height: 200,
+                          child: _buildChatMessages(),
+                        ),
+                        _buildFeedbackMessage(),
+                      ],
+                    )
                   else
-                    if (_showFeedback)
-                      Column(
-                        children: [
-                          SizedBox(
-                            height: 200,
-                            child: _buildChatMessages(),
-                          ),
-                          _buildFeedbackMessage(),
-                        ],
-                      )
-                    else
-                      SizedBox(
-                        height: 200,
-                        child: _buildChatMessages(),
-                      ),
+                    SizedBox(
+                      height: 200,
+                      child: _buildChatMessages(),
+                    ),
 
                   if (_isWaitingForAcceptance)
                     _buildWaitingMessage(providerName),
@@ -1511,8 +1311,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                     ),
                   ],
 
-                  // FIXED: Show quick replies for both providers and customers
-                  // Only hide quick messages when feedback is showing
                   if (!_showFeedback && !_isLoadingChatHistory)
                     _buildQuickReplies(),
 
@@ -1520,7 +1318,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                       _timerCountdown > 0 && isCustomer)
                     _buildCountdownCard(),
 
-                  // FIXED: Show completion request only for customers
                   if (_showCompletionRequest && isCustomer)
                     _buildCompletionRequestCard(),
 
@@ -1595,10 +1392,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
           child: GestureDetector(
             onTap: () {},
             child: Container(
-              width: MediaQuery
-                  .of(context)
-                  .size
-                  .width * 0.85,
+              width: MediaQuery.of(context).size.width * 0.85,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -1634,8 +1428,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
-                              Icons.inventory, size: 16, color: Colors.orange),
+                          const Icon(Icons.inventory, size: 16, color: Colors.orange),
                           const SizedBox(width: 8),
                           AppText(
                             'Using Bundle ID',
@@ -1652,8 +1445,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                   AppText(
                     isProvider
                         ? 'Enter the payment amount for your service'
-                        : 'Your Budget avg. \$${widget.request.averagePrice
-                        .toInt()}/hr',
+                        : 'Your Budget avg. \$${widget.request.averagePrice.toInt()}/hr',
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                     color: AppColors.DarkGray,
@@ -1672,8 +1464,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                       const SizedBox(height: 8),
                       TextField(
                         controller: _amountController,
-                        keyboardType: TextInputType.numberWithOptions(
-                            decimal: true),
+                        keyboardType: TextInputType.numberWithOptions(decimal: true),
                         decoration: InputDecoration(
                           hintText: 'Enter amount',
                           hintStyle: TextStyle(
@@ -1686,8 +1477,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                                color: AppColors.primary, width: 2),
+                            borderSide: const BorderSide(color: AppColors.primary, width: 2),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
@@ -1710,13 +1500,11 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                       if (widget.request.averagePrice > 0) ...[
                         Row(
                           children: [
-                            const Icon(Icons.info_outline, size: 14,
-                                color: Colors.blue),
+                            const Icon(Icons.info_outline, size: 14, color: Colors.blue),
                             const SizedBox(width: 4),
                             Expanded(
                               child: AppText(
-                                'Average price for this service: \$${widget
-                                    .request.averagePrice.toInt()}/hr',
+                                'Average price for this service: \$${widget.request.averagePrice.toInt()}/hr',
                                 fontSize: 12,
                                 fontWeight: FontWeight.w400,
                                 color: Colors.blue,
@@ -1733,8 +1521,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                     child: ElevatedButton(
                       onPressed: _isSubmitting ? null : _handleTaskDone,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _isSubmitting ? Colors.grey : AppColors
-                            .primary,
+                        backgroundColor: _isSubmitting ? Colors.grey : AppColors.primary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -1747,15 +1534,13 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                         height: 24,
                         child: CircularProgressIndicator(
                           strokeWidth: 3,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
                           : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.request_quote, size: 20,
-                              color: Colors.white),
+                          const Icon(Icons.request_quote, size: 20, color: Colors.white),
                           const SizedBox(width: 8),
                           AppText(
                             isProvider ? 'Create Payment Request' : 'Done',
@@ -1769,9 +1554,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                   ),
                   const SizedBox(height: 8),
                   TextButton(
-                    onPressed: _isSubmitting
-                        ? null
-                        : _hideTaskCompletionOverlay,
+                    onPressed: _isSubmitting ? null : _hideTaskCompletionOverlay,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -2019,8 +1802,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
           Row(
             children: [
               AppText(
-                'Date: ${widget.request.formattedDate} Time: ${widget.request
-                    .time}',
+                'Date: ${widget.request.formattedDate} Time: ${widget.request.time}',
                 fontSize: 12,
                 fontWeight: FontWeight.w400,
                 color: AppColors.DarkGray,
@@ -2097,9 +1879,28 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
   }
 
   Widget _buildMessageBubble(ChatMessage message, String providerImage) {
-    final isFromCurrentUser = (message.isFromUser &&
-        _userRole?.toLowerCase() == 'customer') ||
-        (message.isFromProvider && _userRole?.toLowerCase() == 'provider');
+    final isCustomer = _userRole?.toLowerCase() == 'customer';
+    final isProvider = _userRole?.toLowerCase() == 'provider';
+
+    // Determine if message is from current user
+    bool isFromCurrentUser = false;
+
+    if (isCustomer) {
+      // For customers: message is from current user if isFromUser is true
+      isFromCurrentUser = message.isFromUser && message.senderId == _userId;
+    } else if (isProvider) {
+      // For providers: message is from current user if isFromProvider is true
+      isFromCurrentUser = message.isFromProvider && message.senderId == _userId;
+    }
+
+    // If we can't determine by senderId, fall back to the flags
+    if (message.senderId == null) {
+      if (isCustomer) {
+        isFromCurrentUser = message.isFromUser;
+      } else if (isProvider) {
+        isFromCurrentUser = message.isFromProvider;
+      }
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -2107,6 +1908,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
         mainAxisAlignment: isFromCurrentUser
             ? MainAxisAlignment.end
             : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isFromCurrentUser) ...[
             CircleAvatar(
@@ -2126,8 +1928,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: isFromCurrentUser
-                    ? AppColors.primary.withOpacity(
-                    message.isPending ? 0.6 : 1.0)
+                    ? AppColors.primary.withOpacity(message.isPending ? 0.6 : 1.0)
                     : Colors.grey[200],
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -2148,8 +1949,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                         _formatTime(message.timestamp),
                         fontSize: 10,
                         fontWeight: FontWeight.w400,
-                        color: isFromCurrentUser ? Colors.white70 : AppColors
-                            .DarkGray,
+                        color: isFromCurrentUser ? Colors.white70 : AppColors.DarkGray,
                       ),
                       if (message.isPending) ...[
                         const SizedBox(width: 4),
@@ -2159,8 +1959,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              isFromCurrentUser ? Colors.white70 : AppColors
-                                  .DarkGray,
+                              isFromCurrentUser ? Colors.white70 : AppColors.DarkGray,
                             ),
                           ),
                         ),
@@ -2206,8 +2005,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                          AppColors.primary),
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -2240,8 +2038,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.message_outlined, color: Colors.grey[600],
-                      size: 20),
+                  Icon(Icons.message_outlined, color: Colors.grey[600], size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: AppText(
@@ -2273,12 +2070,11 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                 fontWeight: FontWeight.w600,
                 color: AppColors.DarkGray,
               ),
-              // Add refresh button for quick messages
               IconButton(
                 icon: Icon(Icons.refresh, size: 16, color: AppColors.primary),
                 onPressed: _loadQuickMessages,
                 padding: EdgeInsets.zero,
-                constraints: BoxConstraints.tightFor(width: 32, height: 32),
+                constraints: const BoxConstraints.tightFor(width: 32, height: 32),
               ),
             ],
           ),
@@ -2296,13 +2092,11 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                     onTap: () => _sendQuickMessage(message),
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFF7D6),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFF1C400),
-                            width: 1),
+                        border: Border.all(color: const Color(0xFFF1C400), width: 1),
                       ),
                       child: AppText(
                         message.message,
@@ -2426,8 +2220,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(
               5,
-                  (index) =>
-              const Icon(
+                  (index) => const Icon(
                 Icons.star,
                 color: Colors.amber,
                 size: 18,
@@ -2519,7 +2312,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
   Widget _buildCompletionRequestCard() {
     final isCustomer = _userRole?.toLowerCase() == 'customer';
 
-    // Only show this card for customers
     if (!isCustomer) {
       return const SizedBox.shrink();
     }
@@ -2529,26 +2321,20 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
     final providerRating = widget.request.providerRating ?? widget.request.provider?.rating ?? 0.0;
     final providerReviewCount = widget.request.providerReviewCount ?? 0;
 
-    // Extract payment information from money request details - FIXED NULL SAFETY ISSUES
-    final moneyRequest = _moneyRequestDetails;
+    final moneyRequest = _paymentController.moneyRequestDetails;
     final hasPaymentRequest = moneyRequest != null;
-
-    // Use safe navigation with null coalescing
-    final paymentStatus = hasPaymentRequest ? (moneyRequest['status'] as String? ?? 'pending') : 'pending';
-    final amount = hasPaymentRequest ? (moneyRequest['amount'] as int? ?? widget.request.averagePrice.toInt()) : widget.request.averagePrice.toInt();
-
-    // Determine if payment is completed
-    final isPaid = paymentStatus.toLowerCase() == 'paid' ||
-        paymentStatus.toLowerCase() == 'completed';
+    final paymentStatus = hasPaymentRequest ? (moneyRequest!['status'] as String? ?? 'pending') : 'pending';
+    final amount = hasPaymentRequest ? (moneyRequest!['amount'] as int? ?? widget.request.averagePrice.toInt()) : widget.request.averagePrice.toInt();
+    final isPaid = paymentStatus.toLowerCase() == 'paid' || paymentStatus.toLowerCase() == 'completed';
 
     return Container(
       margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0x0500CD49), // 2% #00CD4905
+        color: const Color(0x0500CD49),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: const Color(0x4D00CD49), // 30% #00CD494D
+          color: const Color(0x4D00CD49),
           width: 1,
         ),
         boxShadow: [
@@ -2562,7 +2348,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Request Amount
           Row(
             children: [
               AppText(
@@ -2583,7 +2368,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
 
           const SizedBox(height: 8),
 
-          // Service details
           AppText(
             '${widget.request.serviceName}: \$${widget.request.averagePrice.toInt()}/hr',
             fontSize: 13,
@@ -2593,10 +2377,8 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
 
           const SizedBox(height: 8),
 
-          // Provider info
           Row(
             children: [
-              // Provider image
               CircleAvatar(
                 radius: 12,
                 backgroundImage: providerImage.startsWith('http')
@@ -2608,7 +2390,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                     : const Icon(Icons.person, size: 12),
               ),
               const SizedBox(width: 8),
-              // Provider name and review in a row
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2641,7 +2422,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
 
           const SizedBox(height: 10),
 
-          // Description - Updated based on payment status
           AppText(
             isPaid
                 ? 'Thank you for completing the payment! $providerName has been notified.'
@@ -2653,11 +2433,9 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
 
           const SizedBox(height: 12),
 
-          // Action buttons - Updated based on payment status
           if (!isPaid) ...[
             Row(
               children: [
-                // Cancel button
                 Expanded(
                   child: OutlinedButton(
                     onPressed: _handleCancelCompletion,
@@ -2679,7 +2457,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
 
                 const SizedBox(width: 10),
 
-                // Pay Now button (replaces Accept button)
                 Expanded(
                   child: ElevatedButton(
                     onPressed: _handleAcceptPayment,
@@ -2711,7 +2488,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
               ],
             ),
           ] else ...[
-            // View Receipt button for paid requests
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -2727,7 +2503,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.receipt, size: 16, color: Colors.white),
+                    const Icon(Icons.receipt, size: 16, color: Colors.white),
                     const SizedBox(width: 8),
                     AppText(
                       'View Receipt',
@@ -2743,7 +2519,6 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
 
           const SizedBox(height: 8),
 
-          // Time and status - Updated based on payment status
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -2773,18 +2548,8 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
     );
   }
 
-// Add this helper method to format dates
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day
-        .toString().padLeft(2, '0')} ${date.hour.toString().padLeft(
-        2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-  }
-
-// Add these methods to your class
-  bool _isProcessingPayment = false;
-
   void _handleAcceptPayment() async {
-    final moneyRequest = _moneyRequestDetails;
+    final moneyRequest = _paymentController.moneyRequestDetails;
     if (moneyRequest == null) return;
 
     setState(() {
@@ -2797,32 +2562,27 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
         throw Exception('User not authenticated');
       }
 
-      // Get money request ID
       final moneyRequestId = moneyRequest['_id']?.toString();
       if (moneyRequestId == null || moneyRequestId.isEmpty) {
         throw Exception('Invalid payment request ID');
       }
 
-      // Get service request ID from the money request or widget
       final serviceRequestId = moneyRequest['serviceRequest']?['_id']?.toString() ??
           widget.request.id?.toString() ??
           '';
 
-      // Navigate to ReviewConfirmScreen and wait for result
       final result = await Navigator.of(context).push(
         MaterialPageRoute<bool>(
           builder: (context) => ReviewConfirmScreen(
             request: widget.request,
             moneyRequestId: moneyRequestId,
-            serviceRequestId: serviceRequestId, // Pass serviceRequestId
+            serviceRequestId: serviceRequestId,
             token: token,
           ),
         ),
       );
 
-      // Handle the result from ReviewConfirmScreen
       if (result == true) {
-        // Payment was successful
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Payment completed successfully!'),
@@ -2831,34 +2591,13 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
           ),
         );
 
-        // Update local state
-        setState(() {
-          // Update payment status to paid
-          if (_moneyRequestDetails != null) {
-            _moneyRequestDetails = {
-              ..._moneyRequestDetails!,
-              'status': 'paid',
-              'paymentDetails': {
-                'paymentMethod': 'card',
-                'paidAt': DateTime.now().toIso8601String(),
-              }
-            };
-          }
-        });
-
-        // Reload money request details from server to get updated data
-        await _loadMoneyRequestDetails();
-
-        if (kDebugMode) {
-          print('✅ Payment completed successfully from ReviewConfirmScreen');
-        }
-      } else if (result == false) {
-        // User cancelled or payment failed
-        if (kDebugMode) {
-          print('💰 Payment cancelled or failed in ReviewConfirmScreen');
+        // Reload money request details to update status
+        if (widget.requestId != null) {
+          await _paymentController.loadMoneyRequestDetails(
+            serviceRequestId: widget.requestId!,
+          );
         }
       }
-
     } catch (e) {
       if (kDebugMode) {
         print('❌ Error processing payment: $e');
@@ -2880,46 +2619,36 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
     }
   }
 
-  Future<void> _updatePaymentStatus(String status) async {
-    try {
-      final token = _tokenService.getToken();
-      if (token == null || _moneyRequestDetails == null) return;
-
-      final moneyRequestId = _moneyRequestDetails!['_id']?.toString();
-      if (moneyRequestId == null) return;
-
-      final url = Uri.parse(
-          '${AppConstants.BASE_URL}/api/money-requests/$moneyRequestId/status');
-
-      final response = await http.put(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({'status': status}),
-      );
-
-      if (response.statusCode == 200) {
-        if (kDebugMode) {
-          print('✅ Payment status updated to $status');
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('❌ Error updating payment status: $e');
-      }
-      rethrow;
-    }
-  }
-
   void _viewPaymentDetails() {
-    if (_moneyRequestDetails == null) return;
+    final moneyRequest = _paymentController.moneyRequestDetails;
+    if (moneyRequest == null) return;
 
-
+    // Show payment details dialog or navigate to receipt screen
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Payment Details'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Amount: \$${moneyRequest['amount']}'),
+            Text('Status: ${moneyRequest['status']}'),
+            if (moneyRequest['paymentDetails'] != null)
+              Text('Method: ${moneyRequest['paymentDetails']?['paymentMethod'] ?? 'N/A'}'),
+            if (moneyRequest['createdAt'] != null)
+              Text('Date: ${moneyRequest['createdAt']}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
-
-
 
   String _formatTime(DateTime timestamp) {
     final now = DateTime.now();
@@ -2954,16 +2683,22 @@ class ChatMessage {
     this.isPending = false,
   });
 
-  factory ChatMessage.fromSocketData(Map<String, dynamic> data) {
+  factory ChatMessage.fromSocketData(Map<String, dynamic> data, String? currentUserId) {
     try {
+      final senderRole = data['senderRole']?.toString().toLowerCase() ?? '';
+      final senderId = data['senderId']?.toString();
+
+      // Determine if message is from current user
+      final isCurrentUser = senderId == currentUserId;
+
       return ChatMessage(
         text: data['content']?.toString() ?? 'No content',
-        isFromUser: data['senderRole']?.toString().toLowerCase() == 'customer',
-        isFromProvider: data['senderRole']?.toString().toLowerCase() == 'provider',
+        isFromUser: senderRole == 'customer',
+        isFromProvider: senderRole == 'provider',
         timestamp: data['timestamp'] != null
             ? DateTime.tryParse(data['timestamp'].toString()) ?? DateTime.now()
             : DateTime.now(),
-        senderId: data['senderId']?.toString(),
+        senderId: senderId,
         isQuickChat: data['isQuickChat'] == true || data['quickChatId'] != null,
         isPending: false,
       );

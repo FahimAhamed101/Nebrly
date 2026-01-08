@@ -163,14 +163,14 @@ class _UserQuickChatsScreenState extends State<UserQuickChatsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _messages.isEmpty
-              ? _buildEmptyState()
-              : _buildMessagesList(),
+          ? _buildEmptyState()
+          : _buildMessagesList(),
       floatingActionButton: _canAddMoreMessages()
           ? FloatingActionButton(
-              onPressed: _showAddMessageDialog,
-              backgroundColor: AppColors.primary,
-              child: const Icon(Icons.add, color: Colors.white),
-            )
+        onPressed: _showAddMessageDialog,
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.add, color: Colors.white),
+      )
           : null,
     );
   }

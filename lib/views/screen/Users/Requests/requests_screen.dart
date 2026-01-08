@@ -12,6 +12,7 @@ import 'package:naibrly/widgets/payment_confirmation_bottom_sheet.dart';
 
 import '../../../../controller/Customer/request_controller.dart';
 import '../../../../models/user_request1.dart';
+import '../Request/user_quick_chats_screen.dart' hide UserRequestInboxScreen;
 
 class RequestScreen extends StatelessWidget {
   RequestScreen({super.key});
@@ -183,7 +184,25 @@ class RequestScreen extends StatelessWidget {
     // Extract IDs from the request
     String? bundleId = request.isBundle ? request.id : null;
     String? requestId = !request.isBundle ? request.id : null;
-    String? customerId = request.provider?.id;
+
+    // FIXED: Extract customer ID from the request object
+    // For service requests: get from the customer._id field
+    // For bundles: get from the creator or participant customer
+    String? customerId;
+
+    if (request.isBundle) {
+      // For bundles, use the customerId field that should be parsed from bundle data
+      customerId = request.customerId;
+    } else {
+      // For regular service requests, use the customerId field
+      customerId = request.customerId;
+    }
+
+    print('🔍 Navigating to inbox:');
+    print('  Bundle ID: $bundleId');
+    print('  Request ID: $requestId');
+    print('  Customer ID: $customerId');
+    print('  Is Bundle: ${request.isBundle}');
 
     // Navigate to UserRequestInboxScreen with IDs
     Get.to(() => UserRequestInboxScreen(

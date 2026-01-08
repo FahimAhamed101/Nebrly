@@ -87,13 +87,8 @@ class ProviderRegisterResponse {
     this.data,
   });
 
-  // Get token from data
   String? get token => data?['token'];
-
-  // Get user from data
   Map<String, dynamic>? get user => data?['user'];
-
-  // Get user ID
   String? get userId => user?['id'];
 
   factory ProviderRegisterResponse.fromJson(Map<String, dynamic> json) {
@@ -103,31 +98,30 @@ class ProviderRegisterResponse {
       data: json['data'],
     );
   }
-
-
-
 }
 
-// Add to your provider_model.dart or create new models
-
+// Verify Information Models
 class VerifyInformationRequest {
   final String einNumber;
   final String firstName;
   final String lastName;
-  final String businessRegisteredState;
-  final String? insuranceDocumentPath;
-  final String? idCardFrontPath;
-  final String? idCardBackPath;
+  final String businessRegisteredCountry;
 
   VerifyInformationRequest({
     required this.einNumber,
     required this.firstName,
     required this.lastName,
-    required this.businessRegisteredState,
-    this.insuranceDocumentPath,
-    this.idCardFrontPath,
-    this.idCardBackPath,
+    required this.businessRegisteredCountry,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'einNumber': einNumber,
+      'firstName': firstName,
+      'lastName': lastName,
+      'businessRegisteredCountry': businessRegisteredCountry,
+    };
+  }
 }
 
 class VerifyInformationResponse {

@@ -4,7 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:naibrly/utils/app_colors.dart';
 import 'package:naibrly/views/screen/auth/login_screen.dart';
 import 'package:naibrly/views/screen/Users/auth/sign_up.dart';
-import 'package:naibrly/provider/screens/information_screen.dart';
+import 'package:naibrly/provider/screens/information_screen_register_provider.dart';
 import '../../base/AppText/appText.dart';
 import '../../base/Ios_effect/iosTapEffect.dart';
 import '../../base/bottomNav/bottomNavWrapper.dart';

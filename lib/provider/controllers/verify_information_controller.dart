@@ -25,30 +25,45 @@ class VerifyInformationController extends GetxController {
     required String einNumber,
     required String firstName,
     required String lastName,
-    required String businessRegisteredState,
+    required String businessRegisteredCountry, // Fixed: Changed from State to Country
   }) async {
     try {
       isLoading(true);
       errorMessage('');
 
+      print('Starting verification with data:');
+      print('EIN: $einNumber');
+      print('First Name: $firstName');
+      print('Last Name: $lastName');
+      print('Country: $businessRegisteredCountry');
+      print('Insurance Path: ${insuranceDocumentPath.value}');
+      print('ID Front Path: ${idCardFrontPath.value}');
+      print('ID Back Path: ${idCardBackPath.value}');
+
       // Validate required fields
       if (einNumber.isEmpty ||
           firstName.isEmpty ||
           lastName.isEmpty ||
-          businessRegisteredState.isEmpty ||
-          insuranceDocumentPath.isEmpty ||
-          idCardFrontPath.isEmpty ||
-          idCardBackPath.isEmpty) {
-        errorMessage('Please fill all required fields and upload all documents');
+          businessRegisteredCountry.isEmpty ||
+          insuranceDocumentPath.value.isEmpty) {
+        errorMessage('Please fill all required fields and upload insurance document');
         isLoading(false);
         return;
+      }
+
+      // For non-different owner, we might not need ID cards
+      // Adjust this based on your API requirements
+      if (idCardFrontPath.value.isEmpty || idCardBackPath.value.isEmpty) {
+        // Check if this is acceptable for your API
+        // If ID cards are always required, show error
+        print('Warning: ID cards not uploaded');
       }
 
       final request = VerifyInformationRequest(
         einNumber: einNumber,
         firstName: firstName,
         lastName: lastName,
-        businessRegisteredState: businessRegisteredState,
+        businessRegisteredCountry: businessRegisteredCountry, // Fixed parameter
       );
 
       final response = await _apiService.verifyInformation(
@@ -66,6 +81,7 @@ class VerifyInformationController extends GetxController {
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
           colorText: Colors.white,
+          duration: Duration(seconds: 3),
         );
       } else {
         errorMessage(response.message);

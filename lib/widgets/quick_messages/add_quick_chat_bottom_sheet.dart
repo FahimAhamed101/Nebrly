@@ -211,11 +211,11 @@ class _AddQuickChatBottomSheetState extends State<AddQuickChatBottomSheet> {
                   onPressed: () {
                     Navigator.of(context).pop();
                     // Navigate to UserQuickChatsScreen
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const UserQuickChatsScreen(),
-                      ),
-                    );
+                  //  Navigator.of(context).push(
+                   //   MaterialPageRoute(
+                       // builder: (context) => const UserQuickChatsScreen(),
+                    //  ),
+                  //  );
                   },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,

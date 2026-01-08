@@ -43,7 +43,7 @@ class ApiService extends GetxService {
       requestMultipart.fields['einNumber'] = request.einNumber;
       requestMultipart.fields['firstName'] = request.firstName;
       requestMultipart.fields['lastName'] = request.lastName;
-      requestMultipart.fields['businessRegisteredState'] = request.businessRegisteredState;
+      requestMultipart.fields['businessRegisteredCountry'] = request.businessRegisteredCountry;
 
       // Add files
       await _addMultipartFile(

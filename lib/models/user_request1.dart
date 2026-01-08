@@ -23,7 +23,7 @@ class UserRequest {
   final int estimatedHours;
   final Commission? commission;
   final Review? review;
-
+  final String? customerId;
   // Bundle-specific fields
   final bool isBundle;
   final String? bundleTitle;
@@ -47,6 +47,7 @@ class UserRequest {
 
   UserRequest({
     required this.id,
+    this.customerId,
     required this.serviceName,
     required this.averagePrice,
     required this.date,
@@ -129,6 +130,16 @@ class UserRequest {
         address = '${location['street'] ?? ''}, ${location['city'] ?? ''}, ${location['state'] ?? ''} ${location['zipCode'] ?? ''}';
       }
     }
+    String? customerId;
+    if (json['creator'] != null && json['creator'] is Map<String, dynamic>) {
+      customerId = json['creator']['_id'];
+    } else if (json['customer'] != null) {
+      if (json['customer'] is String) {
+        customerId = json['customer'];
+      } else if (json['customer'] is Map<String, dynamic>) {
+        customerId = json['customer']['_id'];
+      }
+    }
 
     return UserRequest(
       id: json['_id'] ?? '',
@@ -148,6 +159,7 @@ class UserRequest {
       estimatedHours: (json['estimatedHours'] ?? 0).toInt(),
       commission: commission,
       review: review,
+      customerId: customerId,
       providerName: provider?.fullName,
       providerImage: provider?.businessLogo?.url,
       providerRating: provider?.rating,

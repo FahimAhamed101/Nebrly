@@ -20,14 +20,10 @@ class YourInformationScreen extends StatefulWidget {
 }
 
 class _YourInformationScreenState extends State<YourInformationScreen> {
-  final ProviderController providerController = Get.put(ProviderController());
+  final ProviderController providerController = Get.find<ProviderController>();
   final ImagePicker _imagePicker = ImagePicker();
 
   String selectedCountryCode = "+1";
-  String selectedStartDay = "Mon";
-  String selectedEndDay = "Fri";
-  String selectedStartTime = "9:00 am";
-  String selectedEndTime = "5:00 pm";
 
   final List<String> roleOptions = ["owner", "manager", "operator"];
   List<String> selectedServices = [];
@@ -79,7 +75,7 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
     // Listen for registration success
     ever(providerController.registrationSuccess, (success) {
       if (success) {
-        Get.to(() => const VerifyInformationScreen());
+        Get.off(() => const VerifyInformationScreen());
       }
     });
   }
@@ -136,8 +132,86 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
     }
   }
 
+  // Extract business hours from DayHours list
+  Map<String, dynamic> _extractBusinessHours() {
+    final openDays = businessHours.where((day) => day.isOpen).toList();
+
+    if (openDays.isEmpty) {
+      return {
+        'businessServiceStart': '',
+        'businessServiceEnd': '',
+        'businessHoursStart': '',
+        'businessHoursEnd': ''
+      };
+    }
+
+    // Sort days by their index
+    openDays.sort((a, b) {
+      final days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      return days.indexOf(a.dayName).compareTo(days.indexOf(b.dayName));
+    });
+
+    final firstDay = openDays.first.dayName.substring(0, 3).toLowerCase();
+    final lastDay = openDays.last.dayName.substring(0, 3).toLowerCase();
+
+    // Format time
+    String formatTime(TimeOfDay time) {
+      final hour = time.hour.toString().padLeft(2, '0');
+      final minute = time.minute.toString().padLeft(2, '0');
+      final period = time.hour < 12 ? 'am' : 'pm';
+      final hour12 = time.hourOfPeriod;
+      return '$hour12:$minute $period';
+    }
+
+    final startTime = formatTime(openDays.first.startTime);
+    final endTime = formatTime(openDays.first.endTime);
+
+    return {
+      'businessServiceStart': firstDay,
+      'businessServiceEnd': lastDay,
+      'businessHoursStart': startTime,
+      'businessHoursEnd': endTime
+    };
+  }
+
   // Prepare and submit form data
   void _submitForm() {
+    // Validate required fields
+    if (firstNameController.text.isEmpty ||
+        lastNameController.text.isEmpty ||
+        emailController.text.isEmpty ||
+        passwordController.text.isEmpty ||
+        confirmPasswordController.text.isEmpty ||
+        phoneController.text.isEmpty ||
+        businessNameRegisteredController.text.isEmpty ||
+        businessAddressStreetController.text.isEmpty ||
+        businessAddressCityController.text.isEmpty ||
+        businessAddressStateController.text.isEmpty ||
+        businessAddressZipCodeController.text.isEmpty) {
+      Get.snackbar(
+        'Error',
+        'Please fill all required fields',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    if (passwordController.text != confirmPasswordController.text) {
+      Get.snackbar(
+        'Error',
+        'Passwords do not match',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    // Extract business hours
+    final hours = _extractBusinessHours();
+
     // Update controller values from text fields
     providerController.firstName(firstNameController.text.trim());
     providerController.lastName(lastNameController.text.trim());
@@ -150,10 +224,10 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
     providerController.businessPhone(businessPhoneController.text.trim());
     providerController.website(websiteController.text.trim());
     providerController.servicesProvided(selectedServices.join(','));
-    providerController.businessServiceStart(selectedStartDay.toLowerCase());
-    providerController.businessServiceEnd(selectedEndDay.toLowerCase());
-    providerController.businessHoursStart(selectedStartTime);
-    providerController.businessHoursEnd(selectedEndTime);
+    providerController.businessServiceStart(hours['businessServiceStart']);
+    providerController.businessServiceEnd(hours['businessServiceEnd']);
+    providerController.businessHoursStart(hours['businessHoursStart']);
+    providerController.businessHoursEnd(hours['businessHoursEnd']);
     providerController.hourlyRate(hourlyRateController.text.trim());
     providerController.businessAddressStreet(businessAddressStreetController.text.trim());
     providerController.businessAddressCity(businessAddressCityController.text.trim());
@@ -174,7 +248,7 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Get.back(),
         ),
         title: const Text(
           "Your Information",
@@ -215,7 +289,7 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
               const SizedBox(height: 8),
               Obx(() => KoreUploadCard(
                 label: "Upload Your Business Logo",
-                hint: providerController.businessLogoPath.isNotEmpty
+                hint: providerController.businessLogoPath.value.isNotEmpty
                     ? "Logo selected"
                     : "Max 3 MB",
                 icon: Icons.cloud_upload_outlined,
@@ -293,8 +367,9 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
                 items: roleOptions,
                 selectedItem: providerController.providerRole.value,
                 onChanged: (value) {
-                  providerController.providerRole(value ?? '');
-                  setState(() {}); // Add this if the dropdown doesn't update visually
+                  if (value != null) {
+                    providerController.providerRole(value);
+                  }
                 },
               ),
               const SizedBox(height: 16),

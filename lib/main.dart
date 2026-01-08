@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+
 import 'package:naibrly/provider/controllers/ProviderProfileController.dart';
 import 'package:naibrly/provider/controllers/feedback_controller.dart';
 import 'package:naibrly/provider/controllers/home_controller.dart';
+import 'package:naibrly/provider/controllers/provider_controller.dart';
 import 'package:naibrly/provider/controllers/updateprofile_controller.dart';
 import 'package:naibrly/provider/controllers/verify_information_controller.dart';
 import 'package:naibrly/provider/services/analytics_service.dart';
@@ -25,6 +27,7 @@ import 'AllRoutes/route.dart';
 import 'controller/Customer/request_controller.dart';
 import 'controller/Customer/service_controller.dart';
 import 'controller/networkService/networkService.dart';
+import 'controller/payment_controller.dart';
 import 'controller/quick_chat_controller.dart';
 import 'controller/socket_controller.dart';
 
@@ -38,34 +41,50 @@ void main() async {
     await service.init();
     return service;
   }, permanent: true);
+
+  // Core services
   Get.lazyPut(() => AnalyticsService(), fenix: true);
   Get.put(NetworkController());
   Get.put(ApiService());
+  Get.put(MainApiService(), permanent: true);
+
+  // Provider services
   Get.lazyPut(() => HomeApiService());
   Get.lazyPut(() => ProviderHomeController());
   Get.put(VerifyInformationController());
   Get.put(OrdersApiService());
-  Get.lazyPut(()=>FeedbackController());
+  Get.lazyPut(() => FeedbackController());
   Get.lazyPut(() => FeedbackService());
   Get.lazyPut(() => ProfileApiService(), fenix: true);
   Get.lazyPut(() => ProviderProfileController(), fenix: true);
-  final tokenService = Get.find<TokenService>();
-  final token = tokenService.getToken();
-  final bool hasToken = token != null && token.isNotEmpty;
-  Get.put(MainApiService(), permanent: true);
-  Get.lazyPut(()=>ServiceController());
+  Get.put(UpdateprofileController());
+
+  // Customer services
+  Get.lazyPut(() => ServiceController());
+
+  // Quick chat and socket services
   Get.put(QuickChatService());
   Get.put(QuickChatController());
   Get.put(SocketService());
   Get.put(SocketController());
-  Get.put(UpdateprofileController());
+
+  // Naibrly Now
   Get.put(NaibrlyNowController());
+
+  // FIXED: Use Get.put instead of Get.lazyPut for PaymentController
+  // This ensures the controller is initialized immediately and available
+  Get.put(PaymentController(), permanent: true);
+  Get.lazyPut(()=>ProviderController());
+  // Request controller
   await Get.putAsync<RequestController>(() async {
     final controller = RequestController();
-    // Manually call onInit AFTER token service is ready
-
     return controller;
   }, permanent: true);
+
+  // Check token for initial screen
+  final tokenService = Get.find<TokenService>();
+  final token = tokenService.getToken();
+  final bool hasToken = token != null && token.isNotEmpty;
 
   runApp(MyApp(
     firstScreen: hasToken ? const BottomMenuWrappers() : const WelcomeScreen(),
@@ -79,21 +98,20 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        fontFamily: AppConstants.FONTFAMILY,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      builder: (context, child) => SafeArea(
-        top: false,
-        left: false,
-        right: false,
-        bottom: true,
-        child: child ?? const SizedBox.shrink(),
-      ),
+        debugShowCheckedModeBanner: false,
+        title: 'Flutter Demo',
+        theme: ThemeData(
+          fontFamily: AppConstants.FONTFAMILY,
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        ),
+        builder: (context, child) => SafeArea(
+          top: false,
+          left: false,
+          right: false,
+          bottom: true,
+          child: child ?? const SizedBox.shrink(),
+        ),
         home: const WelcomeScreen(),
-        // initialRoute: AppRoutes.loginScreen,
         getPages: AppRoutes.pages
     );
   }

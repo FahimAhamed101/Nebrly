@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -27,23 +26,10 @@ class _VerifyInformationScreenState extends State<VerifyInformationScreen> {
   final TextEditingController ownerFirstNameController = TextEditingController();
   final TextEditingController ownerLastNameController = TextEditingController();
 
-  String? selectedState;
   bool isDifferentOwner = false;
+  final List<String> countryOptions = ["USA"];
+  String? selectedCountry;
 
-  final List<String> usStates = [
-    "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
-    "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho",
-    "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana",
-    "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota",
-    "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada",
-    "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina",
-    "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania",
-    "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas",
-    "Utah", "Vermont", "Virginia", "Washington", "West Virginia",
-    "Wisconsin", "Wyoming"
-  ];
-
-  // Pick image method
   Future<void> _pickImage(ImageType imageType) async {
     try {
       final XFile? image = await _imagePicker.pickImage(
@@ -72,6 +58,7 @@ class _VerifyInformationScreenState extends State<VerifyInformationScreen> {
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
           colorText: Colors.white,
+          duration: const Duration(seconds: 2),
         );
       }
     } catch (e) {
@@ -89,6 +76,7 @@ class _VerifyInformationScreenState extends State<VerifyInformationScreen> {
   void initState() {
     super.initState();
     controller.clearData();
+    selectedCountry = "USA";
   }
 
   @override
@@ -98,9 +86,7 @@ class _VerifyInformationScreenState extends State<VerifyInformationScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Get.back(),
         ),
         title: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,25 +130,25 @@ class _VerifyInformationScreenState extends State<VerifyInformationScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Business Registered In
+            // Business Registered Country
             const Text(
               "Business is registered in",
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
             const SizedBox(height: 8),
             CustomSingleSelectDropdown(
-              hint: "Select USA state",
-              items: usStates,
-              selectedItem: selectedState,
+              hint: "Select country",
+              items: countryOptions,
+              selectedItem: selectedCountry,
               onChanged: (value) {
                 setState(() {
-                  selectedState = value;
+                  selectedCountry = value;
                 });
               },
             ),
             const SizedBox(height: 20),
 
-            // Upload Proof of Insurance
+            // Upload Insurance Document
             const Text(
               "Upload proof of insurance coverage",
               style: TextStyle(fontWeight: FontWeight.w600),
@@ -176,7 +162,8 @@ class _VerifyInformationScreenState extends State<VerifyInformationScreen> {
               icon: Icons.cloud_upload_outlined,
               onTap: () => _pickImage(ImageType.insurance),
             )),
-            // Insurance Document Preview
+
+            // Insurance Preview
             Obx(() => controller.insuranceDocumentPath.value.isNotEmpty
                 ? _buildImagePreview(
               controller.insuranceDocumentPath.value,
@@ -186,17 +173,21 @@ class _VerifyInformationScreenState extends State<VerifyInformationScreen> {
                 : const SizedBox()),
             const SizedBox(height: 20),
 
-            // Checkbox for different owner/operator
+            // Different Owner Checkbox
             Row(
               children: [
                 Checkbox(
                   value: isDifferentOwner,
                   onChanged: (val) {
-                    setState(() => isDifferentOwner = val ?? false);
-                    if (!isDifferentOwner) {
-                      ownerFirstNameController.clear();
-                      ownerLastNameController.clear();
-                    }
+                    setState(() {
+                      isDifferentOwner = val ?? false;
+                      if (!isDifferentOwner) {
+                        ownerFirstNameController.clear();
+                        ownerLastNameController.clear();
+                        controller.setIdCardFront('');
+                        controller.setIdCardBack('');
+                      }
+                    });
                   },
                   activeColor: KoreColors.primary,
                 ),
@@ -209,6 +200,7 @@ class _VerifyInformationScreenState extends State<VerifyInformationScreen> {
               ],
             ),
 
+            // Owner Information Section
             if (isDifferentOwner) ...[
               const SizedBox(height: 10),
               KoreTextField(
@@ -225,15 +217,15 @@ class _VerifyInformationScreenState extends State<VerifyInformationScreen> {
               const SizedBox(height: 20),
 
               const Text(
-                "Owner Operator ID check",
-                style: TextStyle(fontWeight: FontWeight.w600),
+                "Owner Operator ID Check",
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
-              // ID Card Front
+              // ID Front
               const Text(
-                "Front",
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+                "Front of ID Card",
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 6),
               Obx(() => KoreUploadCard(
@@ -244,7 +236,7 @@ class _VerifyInformationScreenState extends State<VerifyInformationScreen> {
                 icon: Icons.credit_card,
                 onTap: () => _pickImage(ImageType.idFront),
               )),
-              // ID Card Front Preview
+
               Obx(() => controller.idCardFrontPath.value.isNotEmpty
                   ? _buildImagePreview(
                 controller.idCardFrontPath.value,
@@ -255,10 +247,10 @@ class _VerifyInformationScreenState extends State<VerifyInformationScreen> {
 
               const SizedBox(height: 16),
 
-              // ID Card Back
+              // ID Back
               const Text(
-                "Back",
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+                "Back of ID Card",
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 6),
               Obx(() => KoreUploadCard(
@@ -269,7 +261,7 @@ class _VerifyInformationScreenState extends State<VerifyInformationScreen> {
                 icon: Icons.credit_card,
                 onTap: () => _pickImage(ImageType.idBack),
               )),
-              // ID Card Back Preview
+
               Obx(() => controller.idCardBackPath.value.isNotEmpty
                   ? _buildImagePreview(
                 controller.idCardBackPath.value,
@@ -279,7 +271,7 @@ class _VerifyInformationScreenState extends State<VerifyInformationScreen> {
                   : const SizedBox()),
             ],
 
-            // Error message
+            // Error Message
             if (controller.errorMessage.value.isNotEmpty) ...[
               const SizedBox(height: 20),
               Container(
@@ -290,48 +282,55 @@ class _VerifyInformationScreenState extends State<VerifyInformationScreen> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.red),
                 ),
-                child: Text(
-                  controller.errorMessage.value,
-                  style: const TextStyle(color: Colors.red),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        controller.errorMessage.value,
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
 
             const SizedBox(height: 40),
 
+            // Submit Button
             KoreButton(
               text: controller.isLoading.value ? "Verifying..." : "Next",
-              onPressed: controller.isLoading.value ? null : () async {
-                // Validate form
-                if (!_validateForm()) {
-                  return;
-                }
-
-                await controller.verifyInformation(
-                  einNumber: einController.text.trim(),
-                  firstName: isDifferentOwner
-                      ? ownerFirstNameController.text.trim()
-                      : "Same as provider",
-                  lastName: isDifferentOwner
-                      ? ownerLastNameController.text.trim()
-                      : "Same as provider",
-                  businessRegisteredState: selectedState ?? '',
-                );
-
-                if (controller.verificationSuccess.value) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>  const SelectServiceAreaScreen(),
-                    ),
-                  );
-                }
-              },
+              onPressed: controller.isLoading.value ? null : _handleSubmit,
             ),
+            const SizedBox(height: 20),
           ],
         ),
       )),
     );
+  }
+
+  Future<void> _handleSubmit() async {
+    if (!_validateForm()) {
+      return;
+    }
+
+    await controller.verifyInformation(
+      einNumber: einController.text.trim(),
+      firstName: isDifferentOwner
+          ? ownerFirstNameController.text.trim()
+          : "Same as provider",
+      lastName: isDifferentOwner
+          ? ownerLastNameController.text.trim()
+          : "Same as provider",
+      businessRegisteredCountry: selectedCountry ?? 'USA',
+
+    );
+
+    if (controller.verificationSuccess.value) {
+      Get.off(() => const SelectServiceAreaScreen());
+    }
   }
 
   Widget _buildImagePreview(String imagePath, String label, VoidCallback onTap) {
@@ -379,44 +378,52 @@ class _VerifyInformationScreenState extends State<VerifyInformationScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            TextButton(
-              onPressed: onTap,
-              child: const Text(
-                'Change Image',
-                style: TextStyle(fontSize: 12),
-              ),
-            ),
-          ],
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: onTap,
+            icon: const Icon(Icons.edit, size: 16),
+            label: const Text('Change Image', style: TextStyle(fontSize: 12)),
+          ),
         ),
       ],
     );
   }
 
   bool _validateForm() {
+    // Clear previous error
+    controller.errorMessage.value = '';
+
+    // Validate EIN
     if (einController.text.isEmpty) {
       controller.errorMessage.value = 'Please enter EIN number';
       return false;
     }
 
-    if (selectedState == null) {
-      controller.errorMessage.value = 'Please select business registration state';
+    if (!RegExp(r'^\d{2}-?\d{7}$').hasMatch(einController.text.trim())) {
+      controller.errorMessage.value = 'Please enter a valid EIN (e.g., 12-3456789 or 123456789)';
       return false;
     }
 
+    // Validate Country
+    if (selectedCountry == null || selectedCountry!.isEmpty) {
+      controller.errorMessage.value = 'Please select business registration country';
+      return false;
+    }
+
+    // Validate Insurance Document
     if (controller.insuranceDocumentPath.value.isEmpty) {
       controller.errorMessage.value = 'Please upload proof of insurance';
       return false;
     }
 
+    // Validate Different Owner Section
     if (isDifferentOwner) {
-      if (ownerFirstNameController.text.isEmpty) {
+      if (ownerFirstNameController.text.trim().isEmpty) {
         controller.errorMessage.value = 'Please enter owner first name';
         return false;
       }
-      if (ownerLastNameController.text.isEmpty) {
+      if (ownerLastNameController.text.trim().isEmpty) {
         controller.errorMessage.value = 'Please enter owner last name';
         return false;
       }
@@ -430,7 +437,6 @@ class _VerifyInformationScreenState extends State<VerifyInformationScreen> {
       }
     }
 
-    controller.errorMessage.value = '';
     return true;
   }
 
