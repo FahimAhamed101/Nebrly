@@ -55,7 +55,7 @@ class _NairblyAppState extends State<NairblyApp> {
   final List<Widget> _screens = [
     const ProviderHomeScreen(),
     const OrdersScreen(),
-    const NotificationsScreen(),
+    NotificationsScreen(),
     const ProviderProfilePage(),
   ];
 

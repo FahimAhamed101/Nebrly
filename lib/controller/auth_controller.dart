@@ -95,6 +95,7 @@ class AuthController extends GetxController {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
         final token = data['data']['token'];
+        print(token);
         final id = data['data']['user']['id'];
         final role = data['data']['user']['role'];
 

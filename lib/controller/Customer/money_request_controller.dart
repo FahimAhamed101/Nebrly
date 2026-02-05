@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:naibrly/models/service_request_model.dart';
+import 'package:naibrly/models/money_request_model.dart';
 import 'package:naibrly/services/api_service.dart';
 
-class ServiceRequestController extends GetxController {
+class MoneyRequestController extends GetxController {
   final MainApiService _apiService = Get.find<MainApiService>();
 
-  final RxList<ServiceRequest> serviceRequests = <ServiceRequest>[].obs;
+  final RxList<MoneyRequest> moneyRequests = <MoneyRequest>[].obs;
   final RxBool isLoading = true.obs;
   final RxString error = ''.obs;
   final RxInt currentPage = 1.obs;
@@ -15,32 +15,32 @@ class ServiceRequestController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchServiceRequests();
+    fetchMoneyRequests();
   }
 
-  /// Fetch all service requests for the provider
-  Future<void> fetchServiceRequests({int page = 1}) async {
+  /// Fetch all money requests for the customer
+  Future<void> fetchMoneyRequests({int page = 1}) async {
     try {
       isLoading.value = true;
       error.value = '';
 
       final response = await _apiService.get(
-        'service-requests/customer/my-requests',
+        'money-requests/customer',
         queryParams: {'page': page.toString()},
       );
 
       if (response['success'] == true) {
-        final List<dynamic> requestsData = response['data']['serviceRequests'] ?? [];
+        final List<dynamic> requestsData = response['data']['moneyRequests'] ?? [];
 
         if (page == 1) {
           // Replace list if first page
-          serviceRequests.assignAll(
-            requestsData.map((data) => ServiceRequest.fromJson(data)).toList(),
+          moneyRequests.assignAll(
+            requestsData.map((data) => MoneyRequest.fromJson(data)).toList(),
           );
         } else {
           // Add to list if loading more pages
-          serviceRequests.addAll(
-            requestsData.map((data) => ServiceRequest.fromJson(data)).toList(),
+          moneyRequests.addAll(
+            requestsData.map((data) => MoneyRequest.fromJson(data)).toList(),
           );
         }
 
@@ -51,7 +51,7 @@ class ServiceRequestController extends GetxController {
           totalPages.value = pagination['pages'] ?? 1;
         }
       } else {
-        error.value = response['message'] ?? 'Failed to load service requests';
+        error.value = response['message'] ?? 'Failed to load money requests';
         Get.snackbar(
           'Error',
           error.value,
@@ -68,10 +68,10 @@ class ServiceRequestController extends GetxController {
         colorText: Colors.red.shade900,
       );
     } catch (e) {
-      error.value = 'Error loading service requests: $e';
+      error.value = 'Error loading money requests: $e';
       Get.snackbar(
         'Error',
-        'Failed to load service requests',
+        'Failed to load money requests',
         backgroundColor: Colors.red.shade100,
         colorText: Colors.red.shade900,
       );
@@ -80,41 +80,41 @@ class ServiceRequestController extends GetxController {
     }
   }
 
-  /// Refresh the service requests list
-  Future<void> refreshServiceRequests() async {
-    await fetchServiceRequests(page: 1);
+  /// Refresh the money requests list
+  Future<void> refreshMoneyRequests() async {
+    await fetchMoneyRequests(page: 1);
   }
 
-  /// Get pending service requests
-  List<ServiceRequest> get pendingRequests {
-    return serviceRequests
+  /// Get pending money requests
+  List<MoneyRequest> get pendingRequests {
+    return moneyRequests
         .where((request) => request.status == 'pending')
         .toList();
   }
 
-  /// Get accepted service requests
-  List<ServiceRequest> get acceptedRequests {
-    return serviceRequests
+  /// Get accepted money requests
+  List<MoneyRequest> get acceptedRequests {
+    return moneyRequests
         .where((request) => request.status == 'accepted')
         .toList();
   }
 
-  /// Get completed service requests
-  List<ServiceRequest> get completedRequests {
-    return serviceRequests
-        .where((request) => request.status == 'completed')
+  /// Get paid money requests
+  List<MoneyRequest> get paidRequests {
+    return moneyRequests
+        .where((request) => request.status == 'paid')
         .toList();
   }
 
-  /// Get cancelled service requests
-  List<ServiceRequest> get cancelledRequests {
-    return serviceRequests
+  /// Get cancelled money requests
+  List<MoneyRequest> get cancelledRequests {
+    return moneyRequests
         .where((request) => request.status == 'cancelled')
         .toList();
   }
 
-  /// Accept a service request
-  Future<void> acceptServiceRequest(String requestId) async {
+  /// Accept a money request and pay
+  Future<void> acceptAndPayMoneyRequest(String requestId) async {
     try {
       // Show loading indicator
       Get.dialog(
@@ -123,7 +123,7 @@ class ServiceRequestController extends GetxController {
       );
 
       final response = await _apiService.post(
-        'service-requests/$requestId/status',
+        'money-requests/$requestId/accept',
         {},
       );
 
@@ -132,14 +132,14 @@ class ServiceRequestController extends GetxController {
 
       if (response['success'] == true) {
         // Update the local state
-        final index = serviceRequests.indexWhere((req) => req.id == requestId);
+        final index = moneyRequests.indexWhere((req) => req.id == requestId);
         if (index != -1) {
-          serviceRequests[index] = ServiceRequest.fromJson(response['data']);
+          moneyRequests[index] = MoneyRequest.fromJson(response['data']);
         }
 
         Get.snackbar(
           'Success',
-          'Service request accepted!',
+          'Payment processed successfully!',
           backgroundColor: Colors.green.shade100,
           colorText: Colors.green.shade900,
           icon: const Icon(Icons.check_circle, color: Colors.green),
@@ -147,7 +147,7 @@ class ServiceRequestController extends GetxController {
       } else {
         Get.snackbar(
           'Error',
-          response['message'] ?? 'Failed to accept service request',
+          response['message'] ?? 'Failed to process payment',
           backgroundColor: Colors.red.shade100,
           colorText: Colors.red.shade900,
           icon: const Icon(Icons.error, color: Colors.red),
@@ -166,7 +166,7 @@ class ServiceRequestController extends GetxController {
       Get.back(); // Close loading dialog
       Get.snackbar(
         'Error',
-        'Failed to accept service request',
+        'Failed to process payment',
         backgroundColor: Colors.red.shade100,
         colorText: Colors.red.shade900,
         icon: const Icon(Icons.error, color: Colors.red),
@@ -174,14 +174,14 @@ class ServiceRequestController extends GetxController {
     }
   }
 
-  /// Cancel/Decline a service request
-  Future<void> cancelServiceRequest(String requestId) async {
+  /// Cancel/Decline a money request
+  Future<void> cancelMoneyRequest(String requestId) async {
     try {
       // Show confirmation dialog
       final confirmed = await Get.dialog<bool>(
         AlertDialog(
-          title: const Text('Decline Request'),
-          content: const Text('Are you sure you want to decline this service request?'),
+          title: const Text('Cancel Request'),
+          content: const Text('Are you sure you want to cancel this payment request?'),
           actions: [
             TextButton(
               onPressed: () => Get.back(result: false),
@@ -190,7 +190,7 @@ class ServiceRequestController extends GetxController {
             TextButton(
               onPressed: () => Get.back(result: true),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Yes, Decline'),
+              child: const Text('Yes, Cancel'),
             ),
           ],
         ),
@@ -205,7 +205,7 @@ class ServiceRequestController extends GetxController {
       );
 
       final response = await _apiService.post(
-        'service-requests/$requestId/cancel',
+        'money-requests/$requestId/cancel',
         {},
       );
 
@@ -214,11 +214,11 @@ class ServiceRequestController extends GetxController {
 
       if (response['success'] == true) {
         // Remove from local list or update status
-        serviceRequests.removeWhere((req) => req.id == requestId);
+        moneyRequests.removeWhere((req) => req.id == requestId);
 
         Get.snackbar(
-          'Declined',
-          'Service request declined',
+          'Cancelled',
+          'Payment request cancelled',
           backgroundColor: Colors.orange.shade100,
           colorText: Colors.orange.shade900,
           icon: const Icon(Icons.info, color: Colors.orange),
@@ -226,7 +226,7 @@ class ServiceRequestController extends GetxController {
       } else {
         Get.snackbar(
           'Error',
-          response['message'] ?? 'Failed to decline service request',
+          response['message'] ?? 'Failed to cancel payment request',
           backgroundColor: Colors.red.shade100,
           colorText: Colors.red.shade900,
           icon: const Icon(Icons.error, color: Colors.red),
@@ -245,7 +245,7 @@ class ServiceRequestController extends GetxController {
       Get.back(); // Close loading dialog
       Get.snackbar(
         'Error',
-        'Failed to decline service request',
+        'Failed to cancel payment request',
         backgroundColor: Colors.red.shade100,
         colorText: Colors.red.shade900,
         icon: const Icon(Icons.error, color: Colors.red),
@@ -253,71 +253,10 @@ class ServiceRequestController extends GetxController {
     }
   }
 
-  /// Complete a service request
-  Future<void> completeServiceRequest(String requestId) async {
+  /// Get money request by ID
+  MoneyRequest? getRequestById(String requestId) {
     try {
-      // Show loading indicator
-      Get.dialog(
-        const Center(child: CircularProgressIndicator()),
-        barrierDismissible: false,
-      );
-
-      final response = await _apiService.post(
-        'service-requests/$requestId/complete',
-        {},
-      );
-
-      // Close loading dialog
-      Get.back();
-
-      if (response['success'] == true) {
-        // Update the local state
-        final index = serviceRequests.indexWhere((req) => req.id == requestId);
-        if (index != -1) {
-          serviceRequests[index] = ServiceRequest.fromJson(response['data']);
-        }
-
-        Get.snackbar(
-          'Success',
-          'Service marked as completed!',
-          backgroundColor: Colors.green.shade100,
-          colorText: Colors.green.shade900,
-          icon: const Icon(Icons.check_circle, color: Colors.green),
-        );
-      } else {
-        Get.snackbar(
-          'Error',
-          response['message'] ?? 'Failed to complete service request',
-          backgroundColor: Colors.red.shade100,
-          colorText: Colors.red.shade900,
-          icon: const Icon(Icons.error, color: Colors.red),
-        );
-      }
-    } on ApiException catch (e) {
-      Get.back(); // Close loading dialog
-      Get.snackbar(
-        'Error',
-        e.message,
-        backgroundColor: Colors.red.shade100,
-        colorText: Colors.red.shade900,
-        icon: const Icon(Icons.error, color: Colors.red),
-      );
-    } catch (e) {
-      Get.back(); // Close loading dialog
-      Get.snackbar(
-        'Error',
-        'Failed to complete service request',
-        backgroundColor: Colors.red.shade100,
-        colorText: Colors.red.shade900,
-        icon: const Icon(Icons.error, color: Colors.red),
-      );
-    }
-  }
-
-  /// Get service request by ID
-  ServiceRequest? getRequestById(String requestId) {
-    try {
-      return serviceRequests.firstWhere((req) => req.id == requestId);
+      return moneyRequests.firstWhere((req) => req.id == requestId);
     } catch (e) {
       return null;
     }

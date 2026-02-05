@@ -58,7 +58,8 @@ class _BottomMenuWrappersState extends State<BottomMenuWrappers> {
   final List<Widget> _providerPages = [
     const provider_home.ProviderHomeScreen(),
     RequestScreen(), // You need to create this screen
-    const NotificationsScreen(), // You need to create this screen
+
+    NotificationsScreen(), // You need to create this screen
     const ProviderProfilePage(),
   ];
 

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:naibrly/provider/controllers/ProviderProfileController.dart';
 import 'package:naibrly/provider/controllers/feedback_controller.dart';
 import 'package:naibrly/provider/controllers/home_controller.dart';
+import 'package:naibrly/provider/controllers/payout_controller.dart';
 import 'package:naibrly/provider/controllers/provider_controller.dart';
 import 'package:naibrly/provider/controllers/updateprofile_controller.dart';
 import 'package:naibrly/provider/controllers/verify_information_controller.dart';
@@ -47,7 +48,11 @@ void main() async {
   Get.put(NetworkController());
   Get.put(ApiService());
   Get.put(MainApiService(), permanent: true);
-
+  // Request controller
+  await Get.putAsync<RequestController>(() async {
+    final controller = RequestController();
+    return controller;
+  }, permanent: true);
   // Provider services
   Get.lazyPut(() => HomeApiService());
   Get.lazyPut(() => ProviderHomeController());
@@ -62,12 +67,13 @@ void main() async {
   // Customer services
   Get.lazyPut(() => ServiceController());
 
+
   // Quick chat and socket services
   Get.put(QuickChatService());
   Get.put(QuickChatController());
   Get.put(SocketService());
   Get.put(SocketController());
-
+  Get.put(PayoutController());
   // Naibrly Now
   Get.put(NaibrlyNowController());
 
@@ -75,11 +81,7 @@ void main() async {
   // This ensures the controller is initialized immediately and available
   Get.put(PaymentController(), permanent: true);
   Get.lazyPut(()=>ProviderController());
-  // Request controller
-  await Get.putAsync<RequestController>(() async {
-    final controller = RequestController();
-    return controller;
-  }, permanent: true);
+
 
   // Check token for initial screen
   final tokenService = Get.find<TokenService>();

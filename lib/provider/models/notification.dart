@@ -1,48 +1,95 @@
+// models/notification.dart
 class NotificationItem {
   final String id;
+  final String userId;
   final String title;
-  final String timestamp;
+  final String body;
+  final String link;
   final bool isRead;
-  final String content;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final int v;
 
   NotificationItem({
     required this.id,
+    required this.userId,
     required this.title,
-    required this.timestamp,
+    required this.body,
+    required this.link,
     required this.isRead,
-    required this.content,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.v,
   });
 
-  // Factory constructor to create from JSON
   factory NotificationItem.fromJson(Map<String, dynamic> json) {
     return NotificationItem(
-      id: json['id'] ?? '',
+      id: json['_id'] ?? '',
+      userId: json['user'] ?? '',
       title: json['title'] ?? '',
-      timestamp: json['timestamp'] ?? '',
+      body: json['body'] ?? '',
+      link: json['link'] ?? '',
       isRead: json['isRead'] ?? false,
-      content: json['content'] ?? '',
+      createdAt: DateTime.parse(json['createdAt']),
+      updatedAt: DateTime.parse(json['updatedAt']),
+      v: json['__v'] ?? 0,
     );
   }
 
-  // Method to convert to JSON
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      '_id': id,
+      'user': userId,
       'title': title,
-      'timestamp': timestamp,
+      'body': body,
+      'link': link,
       'isRead': isRead,
-      'content': content,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      '__v': v,
     };
   }
 
-  // Method to mark as read
-  NotificationItem markAsRead() {
+  NotificationItem copyWith({
+    String? id,
+    String? userId,
+    String? title,
+    String? body,
+    String? link,
+    bool? isRead,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    int? v,
+  }) {
     return NotificationItem(
-      id: id,
-      title: title,
-      timestamp: timestamp,
-      isRead: true,
-      content: content,
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      link: link ?? this.link,
+      isRead: isRead ?? this.isRead,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      v: v ?? this.v,
+    );
+  }
+}
+
+class NotificationResponse {
+  final bool success;
+  final List<NotificationItem> data;
+
+  NotificationResponse({
+    required this.success,
+    required this.data,
+  });
+
+  factory NotificationResponse.fromJson(Map<String, dynamic> json) {
+    return NotificationResponse(
+      success: json['success'] ?? false,
+      data: (json['data'] as List)
+          .map((item) => NotificationItem.fromJson(item))
+          .toList(),
     );
   }
 }

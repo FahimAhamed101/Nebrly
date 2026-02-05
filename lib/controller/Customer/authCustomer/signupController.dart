@@ -29,16 +29,30 @@ class SignUpController extends GetxController {
   final TextEditingController zipCode = TextEditingController();
   final TextEditingController city = TextEditingController();
   final TextEditingController aptSuite = TextEditingController();
+
   RxBool isLoading = false.obs;
-  final RxBool showHide = false.obs;
-  final RxBool showHide1 = false.obs;
+  final RxBool showHide = false.obs; // ✅ Password hidden by default
+  final RxBool showHide1 = false.obs; // ✅ Confirm password hidden by default
   var privacy = false.obs;
+  var selectedState = ''.obs; // ✅ For state dropdown
+
   void passwordToggle() {
     showHide.value = !showHide.value;
   }
+
   void passwordToggle1() {
     showHide1.value = !showHide1.value;
   }
+
+  // ✅ Password validation method
+  bool isPasswordValid() {
+    final pwd = password.text;
+    return pwd.length >= 6 &&
+        pwd.contains(RegExp(r'\d')) && // At least 1 number
+        pwd.contains(RegExp(r'[A-Z]')) && // At least 1 capital letter
+        pwd.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]')); // At least 1 special character
+  }
+
   Future<File?> cropImage(File imageFile) async {
     try {
       final croppedFile = await ImageCropper().cropImage(
@@ -78,6 +92,7 @@ class SignUpController extends GetxController {
       return null;
     }
   }
+
   Future<File> compressImage(File file, {int targetSizeKB = 100}) async {
     int quality = 50;
     File? compressedFile;
@@ -121,10 +136,12 @@ class SignUpController extends GetxController {
       }
     } while (true);
   }
+
   RxString base64CompressedImage = ''.obs;
   RxString studentAddPath = ''.obs;
   Rx<File?> frontLicenseFile = Rx<File?>(null);
   Rx<File?> backLicenseFile = Rx<File?>(null);
+
   Future<File?> pickAddImage(ImageSource source) async {
     final XFile? pickedFile = await ImagePicker().pickImage(source: source);
     if (pickedFile == null) return null;
@@ -173,7 +190,9 @@ class SignUpController extends GetxController {
     print("Final compressed size: ${(compressedSize / 1024).toStringAsFixed(2)} KB");
     return compressedFile;
   }
+
   Rx<File?> profileImage = Rx<File?>(null);
+
   Future<void> pickProfileImage() async {
     try {
       final File? image = await pickAddImage(ImageSource.gallery);
@@ -184,23 +203,25 @@ class SignUpController extends GetxController {
       print("Error picking image: $e");
     }
   }
-  Future<void> signUp(BuildContext context,{
-    String? firstnames,
-    String? lasnames,
-    String? emails,
-    String? passwords,
-    String? confrimpasswords,
-    String? phones,
-    String? streets,
-    String? states,
-    String? zipcodes,
-    String? citys,
-    String? aptSuites,
-  }) async {
+
+  Future<void> signUp(
+      BuildContext context, {
+        String? firstnames,
+        String? lasnames,
+        String? emails,
+        String? passwords,
+        String? confrimpasswords,
+        String? phones,
+        String? streets,
+        String? states,
+        String? zipcodes,
+        String? citys,
+        String? aptSuites,
+      }) async {
     final String url = '${AppConstants.BASE_URL}/api/auth/register/customer';
     final networkController = Get.find<NetworkController>();
     if (!networkController.isOnline.value) {
-      return ;
+      return;
     }
     isLoading.value = true;
 
@@ -233,7 +254,6 @@ class SignUpController extends GetxController {
           compressedFile.path,
           contentType: MediaType('image', 'jpeg'),
         ));
-
       }
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
@@ -244,20 +264,27 @@ class SignUpController extends GetxController {
 
         final role = data['data']['user']['role'];
         await TokenService().saveUserRole(role);
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const BottomMenuWrappers()),);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const BottomMenuWrappers()),
+        );
         await TokenService().saveToken(token);
 
-        showSuccess(context,"Account created successfully!",);
+        showSuccess(
+          context,
+          "Account created successfully!",
+        );
         isLoading.value = false;
       } else {
         isLoading.value = false;
       }
     } catch (e) {
       isLoading.value = false;
-    }finally{
+    } finally {
       isLoading.value = false;
     }
   }
+
   void showError(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -266,6 +293,7 @@ class SignUpController extends GetxController {
       ),
     );
   }
+
   void showSuccess(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

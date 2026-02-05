@@ -10,6 +10,8 @@ import 'package:naibrly/views/base/primaryButton/primary_button.dart';
 import '../../../../controller/Customer/authCustomer/signupController.dart';
 import '../../../../utils/app_icon.dart';
 import 'base/countryTextfield.dart';
+
+
 class SignUp extends StatefulWidget {
   const SignUp({super.key});
 
@@ -110,7 +112,7 @@ class _SignUpState extends State<SignUp> {
                 const SizedBox(height: 16,),
                 CustomCountryCodePicker(
                   countryCodeController:controller.phoneNumber,
-                  initialCountryCode: "",
+                  initialCountryCode: "US",
                 ),
                 const SizedBox(height: 5,),
                 AppTextField(

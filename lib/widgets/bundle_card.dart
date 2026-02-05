@@ -25,6 +25,7 @@ class BundleCard extends StatefulWidget {
   final String? serviceDate;
   final int? discountPercentage;
   final String? publishedText;
+  final String? shareToken;
 
   const BundleCard({
     super.key,
@@ -45,6 +46,7 @@ class BundleCard extends StatefulWidget {
     this.publishedText,
     this.bundleId,
     this.loadingBundleId,
+    this.shareToken,
   });
 
   @override
@@ -136,18 +138,23 @@ class _BundleCardState extends State<BundleCard> {
                     const SizedBox(width: 8),
                   ]
                   else ...[
-                    IosTapEffect(
-                      onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          useSafeArea: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (context) => const BundlePublishedBottomSheet(),
-                        );
-                      },
-                      child: const Icon(Icons.share_outlined, size: 20, color: Colors.black87),
-                    ),
-                    const SizedBox(width: 8),
+                    if (widget.shareToken != null) ...[
+                      IosTapEffect(
+                        onTap: () {
+                          showModalBottomSheet(
+                            context: context,
+                            useSafeArea: true,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (context) => BundlePublishedBottomSheet(
+                              shareToken: widget.shareToken!,
+                            ),
+                          );
+                        },
+                        child: const Icon(Icons.share_outlined, size: 20, color: Colors.black87),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
                   ],
                   if (widget.isExpandable)
                     IosTapEffect(

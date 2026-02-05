@@ -80,7 +80,7 @@ class ServiceAreaSection extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const ServiceAreaScreen(),
+                builder: (context) => ServiceAreaScreen(),
               ),
             );
           },

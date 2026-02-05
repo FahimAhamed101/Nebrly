@@ -410,8 +410,8 @@ class RequestCard extends StatelessWidget {
           Row(
             children: [
               // Overlapping avatars
-              ...List.generate(3, (index) => Container(
-                margin: EdgeInsets.only(left: index > 0 ? -8 : 0),
+              ...List.generate(3, (index) => Transform.translate(
+                offset: Offset(index > 0 ? -8.0 : 0.0, 0.0),
                 child: CircleAvatar(
                   radius: 16,
                   backgroundColor: KoreColors.primary,

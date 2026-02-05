@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_intl_phone_field/flutter_intl_phone_field.dart';
@@ -57,15 +56,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void _loadUserData() {
     final user = _profileController.profileInfo.value;
     if (user != null) {
-      firstNameController.text = user.firstName;
-      lastNameController.text = user.lastName;
-      phoneController.text = user.phone;
-      streetController.text = user.address.street;
-      cityController.text = user.address.city;
-      stateController.text = user.address.state;
-      zipCodeController.text = user.address.zipCode;
-      aptSuiteController.text = user.address.aptSuite;
-      _controller.userProfileImageUrl.value = user.profileImage.url;
+      firstNameController.text = user.firstName ?? '';
+      lastNameController.text = user.lastName ?? '';
+      phoneController.text = user.phone ?? '';
+      streetController.text = user.address?.street ?? '';
+      cityController.text = user.address?.city ?? '';
+      stateController.text = user.address?.state ?? '';
+      zipCodeController.text = user.address?.zipCode ?? '';
+      aptSuiteController.text = user.address?.aptSuite ?? '';
+      _controller.userProfileImageUrl.value = user.profileImage?.url ?? '';
     }
   }
 
@@ -117,237 +116,262 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           color: AppColors.Black,
         ),
       ),
-      body: NestedScrollView(
-        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
-          return <Widget>[];
-        },
-        body: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
-              /// Profile Image
-              Center(
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Obx(() {
-                      return Container(
-                        padding: const EdgeInsets.all(5),
+            /// Profile Image
+            Center(
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Obx(() {
+                    return Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.LightGray,
+                          width: 1,
+                        ),
+                      ),
+                      child: CircleAvatar(
+                        radius: 56,
+                        backgroundImage: _controller.selectedImageEDT.value != null
+                            ? FileImage(_controller.selectedImageEDT.value!)
+                            : (_controller.userProfileImageUrl.value.isNotEmpty
+                            ? NetworkImage(_controller.userProfileImageUrl.value)
+                            : const AssetImage('assets/images/default_avatar.png')
+                        ) as ImageProvider,
+                      ),
+                    );
+                  }),
+
+                  /// Edit Icon
+                  Positioned(
+                    bottom: -2,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: () {
+                        _controller.pickImage(ImageSource.gallery);
+                      },
+                      child: Container(
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
+                          color: AppColors.White,
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: AppColors.LightGray,
-                            width: 1,
+                            width: 1.5,
                           ),
                         ),
-                        child: CircleAvatar(
-                          radius: 56,
-                          backgroundImage: _controller.selectedImageEDT.value != null
-                              ? FileImage(_controller.selectedImageEDT.value!)
-                              : NetworkImage(
-                            _controller.userProfileImageUrl.value.isNotEmpty
-                                ? _controller.userProfileImageUrl.value
-                                : 'https://media.istockphoto.com/id/1682296067/photo/happy-studio-portrait-or-professional-man-real-estate-agent-or-asian-businessman-smile-for.jpg?s=612x612&w=0&k=20&c=9zbG2-9fl741fbTWw5fNgcEEe4ll-JegrGlQQ6m54rg=',
-                          ) as ImageProvider,
-                        ),
-                      );
-                    }),
-
-                    /// Edit Icon
-                    Positioned(
-                      bottom: -2,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: () {
-                          _controller.pickImage(ImageSource.gallery);
-                        },
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: AppColors.White,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.LightGray,
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Center(
-                            child: SvgPicture.asset(
-                              AppIcons.edit,
-                              width: 24,
-                              height: 24,
-                            ),
+                        child: Center(
+                          child: SvgPicture.asset(
+                            AppIcons.edit,
+                            width: 24,
+                            height: 24,
                           ),
                         ),
                       ),
-                    )
-                  ],
-                ),
+                    ),
+                  )
+                ],
               ),
+            ),
 
-              SizedBox(height: MediaQuery.of(context).size.height * 0.01),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.01),
 
-              const Align(
-                alignment: Alignment.center,
-                child: AppText(
-                  'Upload Profile Photo',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.Black,
-                ),
-              ),
-
-              SizedBox(height: MediaQuery.of(context).size.height * 0.03),
-
-              /// First Name
-              const AppText(
-                "First Name",
+            const Align(
+              alignment: Alignment.center,
+              child: AppText(
+                'Upload Profile Photo',
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
-                fontSize: 16,
-                color: AppColors.black,
+                color: AppColors.Black,
               ),
-              const SizedBox(height: 10),
-              AppTextField1(
-                controller: firstNameController,
-                hint: "John",
-              ),
+            ),
 
-              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.03),
 
-              /// Last Name
-              const AppText(
-                "Last Name",
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-                color: AppColors.black,
-              ),
-              const SizedBox(height: 10),
-              AppTextField1(
-                controller: lastNameController,
-                hint: "Doe",
-              ),
+            /// First Name
+            const AppText(
+              "First Name",
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              color: AppColors.black,
+            ),
+            const SizedBox(height: 10),
+            AppTextField1(
+              controller: firstNameController,
+              hint: "John",
+            ),
 
-              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
-              /// Phone
-              const AppText(
-                "Phone Number",
-                fontWeight: FontWeight.w500,
-                fontSize: 16,
-                color: AppColors.black,
-              ),
-              const SizedBox(height: 10),
-              IntlPhoneField(
-                controller: phoneController,
-                decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppColors.LightGray, width: 1),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppColors.DarkGray, width: 1),
-                  ),
-                  focusedErrorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.red, width: 1),
-                  ),
+            /// Last Name
+            const AppText(
+              "Last Name",
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              color: AppColors.black,
+            ),
+            const SizedBox(height: 10),
+            AppTextField1(
+              controller: lastNameController,
+              hint: "Doe",
+            ),
+
+            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+
+            /// Phone
+            const AppText(
+              "Phone Number",
+              fontWeight: FontWeight.w500,
+              fontSize: 16,
+              color: AppColors.black,
+            ),
+            const SizedBox(height: 10),
+            IntlPhoneField(
+              controller: phoneController,
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: AppColors.LightGray, width: 1),
                 ),
-                initialCountryCode: 'US',
-                onChanged: (phone) {
-                  print(phone.completeNumber);
-                },
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: AppColors.DarkGray, width: 1),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Colors.red, width: 1),
+                ),
               ),
+              initialCountryCode: 'US',
+              onChanged: (phone) {
+                print(phone.completeNumber);
+              },
+            ),
 
-              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
-              /// Street Address
-              const AppText(
-                "Street",
-                fontWeight: FontWeight.w500,
-                fontSize: 16,
-                color: AppColors.black,
-              ),
-              const SizedBox(height: 10),
-              AppTextField1(
-                controller: streetController,
-                hint: "789 Updated Street",
-              ),
+            /// Street Address
+            const AppText(
+              "Street",
+              fontWeight: FontWeight.w500,
+              fontSize: 16,
+              color: AppColors.black,
+            ),
+            const SizedBox(height: 10),
+            AppTextField1(
+              controller: streetController,
+              hint: "789 Updated Street",
+            ),
 
-              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
-              /// City
-              const AppText(
-                "City",
-                fontWeight: FontWeight.w500,
-                fontSize: 16,
-                color: AppColors.black,
-              ),
-              const SizedBox(height: 10),
-              AppTextField1(
-                controller: cityController,
-                hint: "Updated City",
-              ),
+            /// City
+            const AppText(
+              "City",
+              fontWeight: FontWeight.w500,
+              fontSize: 16,
+              color: AppColors.black,
+            ),
+            const SizedBox(height: 10),
+            AppTextField1(
+              controller: cityController,
+              hint: "Updated City",
+            ),
 
-              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
-              /// State
-              const AppText(
-                "State",
-                fontWeight: FontWeight.w500,
-                fontSize: 16,
-                color: AppColors.black,
-              ),
-              const SizedBox(height: 10),
-              AppTextField1(
-                controller: stateController,
-                hint: "UC",
-              ),
+            /// State
+            const AppText(
+              "State",
+              fontWeight: FontWeight.w500,
+              fontSize: 16,
+              color: AppColors.black,
+            ),
+            const SizedBox(height: 10),
+            AppTextField1(
+              controller: stateController,
+              hint: "UC",
+            ),
 
-              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
-              /// Zip Code
-              const AppText(
-                "Zip Code",
-                fontWeight: FontWeight.w500,
-                fontSize: 16,
-                color: AppColors.black,
-              ),
-              const SizedBox(height: 10),
-              AppTextField1(
-                keyboardType: TextInputType.number,
-                controller: zipCodeController,
-                hint: "54321",
-              ),
+            /// Zip Code
+            const AppText(
+              "Zip Code",
+              fontWeight: FontWeight.w500,
+              fontSize: 16,
+              color: AppColors.black,
+            ),
+            const SizedBox(height: 10),
+            AppTextField1(
+              keyboardType: TextInputType.number,
+              controller: zipCodeController,
+              hint: "54321",
+            ),
 
-              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.02),
 
-              /// Apartment/Suite
-              const AppText(
-                "Apartment/Suite",
-                fontWeight: FontWeight.w500,
-                fontSize: 16,
-                color: AppColors.black,
-              ),
-              const SizedBox(height: 10),
-              AppTextField1(
-                controller: aptSuiteController,
-                hint: "Suite 100",
-              ),
+            /// Apartment/Suite
+            const AppText(
+              "Apartment/Suite",
+              fontWeight: FontWeight.w500,
+              fontSize: 16,
+              color: AppColors.black,
+            ),
+            const SizedBox(height: 10),
+            AppTextField1(
+              controller: aptSuiteController,
+              hint: "Suite 100",
+            ),
 
-              SizedBox(height: MediaQuery.of(context).size.height * 0.02),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.03),
 
-              ///----- Save Button ------///
-              PrimaryButton(
-                text: "Save Changes",
-                onTap: () {
+            ///----- Save Button ------///
+            Obx(() {
+              return PrimaryButton(
+                text: _controller.isLoading.value ? "Saving..." : "Save Changes",
+                onTap: _controller.isLoading.value
+                    ? () {
+                  // Do nothing when loading
+                  print("Button disabled - loading in progress");
+                }
+                    : () {
                   HapticFeedback.lightImpact();
+
+                  // Validate required fields
+                  if (firstNameController.text.trim().isEmpty) {
+                    Get.snackbar("Error", "First name is required");
+                    return;
+                  }
+
+                  if (lastNameController.text.trim().isEmpty) {
+                    Get.snackbar("Error", "Last name is required");
+                    return;
+                  }
+
+                  // Debug print
+                  print("📋 Form data:");
+                  print("First: ${firstNameController.text}");
+                  print("Last: ${lastNameController.text}");
+                  print("Phone: ${phoneController.text}");
+                  print("Street: ${streetController.text}");
+                  print("City: ${cityController.text}");
+                  print("State: ${stateController.text}");
+                  print("Zip: ${zipCodeController.text}");
+                  print("Apt/Suite: ${aptSuiteController.text}");
+                  print("Has Image: ${_controller.selectedImageEDT.value != null}");
+
                   _controller.updateProfile(
                     firstName: firstNameController.text.trim(),
                     lastName: lastNameController.text.trim(),
@@ -360,11 +384,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     profileImage: _controller.selectedImageEDT.value,
                   );
                 },
-              ),
+              );
+            }),
 
-              SizedBox(height: MediaQuery.of(context).size.height * 0.080),
-            ],
-          ),
+            SizedBox(height: MediaQuery.of(context).size.height * 0.08),
+          ],
         ),
       ),
     );

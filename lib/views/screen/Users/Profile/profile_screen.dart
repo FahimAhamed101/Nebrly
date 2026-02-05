@@ -121,12 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 const SizedBox(height: 4),
 
-                const AppText(
-                    "Home owner",
-                    fontSize: 11,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.Black
-                ),
+
                 SizedBox(height: MediaQuery.of(context).size.height *0.05),
                 const Align(
                   alignment: Alignment.topLeft,
@@ -227,12 +222,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),),
 
 
-          const SizedBox(height: 10),
 
-          IconTextRow(
-            iconPath: AppIcons.men,
-            text: 'Home owner',
-          ),
 
           const SizedBox(height: 10),
           Obx(() {

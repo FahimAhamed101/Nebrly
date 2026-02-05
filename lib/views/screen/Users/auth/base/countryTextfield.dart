@@ -11,7 +11,7 @@ class CustomCountryCodePicker extends StatelessWidget {
 
   const CustomCountryCodePicker({
     super.key,
-    this.initialCountryCode = 'BD',
+    this.initialCountryCode = 'US',
     required this.countryCodeController,
     this.onCountryChanged,
   });

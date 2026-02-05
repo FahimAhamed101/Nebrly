@@ -1,26 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
-class PayoutInformationScreen extends StatefulWidget {
-  const PayoutInformationScreen({super.key});
+import '../../controllers/payout_controller.dart';
 
-  @override
-  State<PayoutInformationScreen> createState() => _PayoutInformationScreenState();
-}
 
-class _PayoutInformationScreenState extends State<PayoutInformationScreen> {
-  final TextEditingController _accountHolderController = TextEditingController(text: "Jacob Meikle");
-  final TextEditingController _accountNumberController = TextEditingController(text: "0123456789");
-  final TextEditingController _routingNumberController = TextEditingController(text: "0123456789");
+class PayoutInformationScreen extends StatelessWidget {
+  PayoutInformationScreen({super.key});
 
-  String _selectedBank = "";
-
-  @override
-  void dispose() {
-    _accountHolderController.dispose();
-    _accountNumberController.dispose();
-    _routingNumberController.dispose();
-    super.dispose();
-  }
+  final PayoutController controller = Get.put(PayoutController());
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +18,7 @@ class _PayoutInformationScreenState extends State<PayoutInformationScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Get.back(),
         ),
         title: const Text(
           "Payout Information",
@@ -45,93 +32,118 @@ class _PayoutInformationScreenState extends State<PayoutInformationScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.black),
-            onPressed: () {
-              // Handle refresh action
-            },
+            onPressed: () => controller.fetchPayoutInformation(),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Update payout information.",
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
+      body: Obx(() {
+        if (controller.isLoading.value) {
+          return const Center(
+            child: CircularProgressIndicator(
+              color: Color(0xFF0E7A60),
             ),
-            const SizedBox(height: 8),
+          );
+        }
 
-            Text(
-              "Updating banking information requires admin approval.",
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            _buildTextField(
-              label: "Account Holder Name",
-              controller: _accountHolderController,
-            ),
-            const SizedBox(height: 20),
-
-            _buildBankDropdown(),
-            const SizedBox(height: 20),
-
-            _buildTextField(
-              label: "Enter Your Bank Account Number",
-              controller: _accountNumberController,
-            ),
-            const SizedBox(height: 20),
-
-            _buildTextField(
-              label: "Routing Number",
-              controller: _routingNumberController,
-            ),
-            const SizedBox(height: 32),
-
-            _buildSecurityBox(),
-            const SizedBox(height: 32),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0E7A60),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text(
-                  "Update Request",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Update payout information.",
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
+              const SizedBox(height: 8),
+
+              Text(
+                "Updating banking information requires admin approval.",
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              _buildTextField(
+                label: "Account Holder Name",
+                controller: TextEditingController(text: controller.accountHolderName.value),
+                onChanged: (value) => controller.accountHolderName.value = value,
+              ),
+              const SizedBox(height: 20),
+
+              _buildBankDropdown(),
+              const SizedBox(height: 20),
+
+              _buildTextField(
+                label: "Enter Your Bank Account Number",
+                controller: TextEditingController(text: controller.accountNumber.value),
+                onChanged: (value) => controller.accountNumber.value = value,
+              ),
+              const SizedBox(height: 20),
+
+              _buildTextField(
+                label: "Routing Number",
+                controller: TextEditingController(text: controller.routingNumber.value),
+                onChanged: (value) => controller.routingNumber.value = value,
+              ),
+              const SizedBox(height: 32),
+
+              _buildSecurityBox(),
+              const SizedBox(height: 32),
+
+              _buildCurrentInformation(),
+              const SizedBox(height: 20),
+
+              SizedBox(
+                width: double.infinity,
+                child: Obx(() => ElevatedButton(
+                  onPressed: controller.isUpdating.value
+                      ? null
+                      : () => controller.updatePayoutInformation(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0E7A60),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    disabledBackgroundColor: Colors.grey[400],
+                  ),
+                  child: controller.isUpdating.value
+                      ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                      : const Text(
+                    "Update Request",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                )),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      }),
     );
   }
 
   Widget _buildTextField({
     required String label,
     required TextEditingController controller,
+    required Function(String) onChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,6 +159,7 @@ class _PayoutInformationScreenState extends State<PayoutInformationScreen> {
         const SizedBox(height: 8),
         TextField(
           controller: controller,
+          onChanged: onChanged,
           decoration: InputDecoration(
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
@@ -186,7 +199,9 @@ class _PayoutInformationScreenState extends State<PayoutInformationScreen> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          initialValue: _selectedBank.isEmpty ? null : _selectedBank,
+          value: controller.selectedBank.value.isEmpty
+              ? null
+              : controller.selectedBank.value,
           decoration: InputDecoration(
             hintText: "Choose your bank",
             border: OutlineInputBorder(
@@ -213,30 +228,13 @@ class _PayoutInformationScreenState extends State<PayoutInformationScreen> {
             DropdownMenuItem(value: "JPMorgan Chase", child: Text("JPMorgan Chase")),
             DropdownMenuItem(value: "Wells Fargo", child: Text("Wells Fargo")),
             DropdownMenuItem(value: "Citibank", child: Text("Citibank")),
-            DropdownMenuItem(value: "US Bank", child: Text("US Bank")),
+            DropdownMenuItem(value: "U.S. Bank", child: Text("U.S. Bank")),
             DropdownMenuItem(value: "PNC Bank", child: Text("PNC Bank")),
             DropdownMenuItem(value: "Capital One", child: Text("Capital One")),
             DropdownMenuItem(value: "TD Bank", child: Text("TD Bank")),
-            DropdownMenuItem(value: "Bank of New York Mellon", child: Text("Bank of New York Mellon")),
-            DropdownMenuItem(value: "State Street Bank", child: Text("State Street Bank")),
-            DropdownMenuItem(value: "Goldman Sachs", child: Text("Goldman Sachs")),
-            DropdownMenuItem(value: "Morgan Stanley", child: Text("Morgan Stanley")),
-            DropdownMenuItem(value: "American Express", child: Text("American Express")),
-            DropdownMenuItem(value: "Discover Bank", child: Text("Discover Bank")),
-            DropdownMenuItem(value: "Ally Bank", child: Text("Ally Bank")),
-            DropdownMenuItem(value: "Charles Schwab Bank", child: Text("Charles Schwab Bank")),
-            DropdownMenuItem(value: "Fifth Third Bank", child: Text("Fifth Third Bank")),
-            DropdownMenuItem(value: "KeyBank", child: Text("KeyBank")),
-            DropdownMenuItem(value: "Regions Bank", child: Text("Regions Bank")),
-            DropdownMenuItem(value: "SunTrust Bank", child: Text("SunTrust Bank")),
-            DropdownMenuItem(value: "BB&T Bank", child: Text("BB&T Bank")),
-            DropdownMenuItem(value: "Huntington Bank", child: Text("Huntington Bank")),
-            DropdownMenuItem(value: "Comerica Bank", child: Text("Comerica Bank")),
-            DropdownMenuItem(value: "M&T Bank", child: Text("M&T Bank")),
-            DropdownMenuItem(value: "First National Bank", child: Text("First National Bank")),
             DropdownMenuItem(value: "Other", child: Text("Other")),
           ],
-          onChanged: (value) => setState(() => _selectedBank = value ?? ""),
+          onChanged: (value) => controller.selectedBank.value = value ?? "",
         ),
       ],
     );
@@ -291,6 +289,69 @@ class _PayoutInformationScreenState extends State<PayoutInformationScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCurrentInformation() {
+    if (controller.payoutInfo.value == null) return const SizedBox();
+
+    final info = controller.payoutInfo.value!;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Current Information",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildInfoRow("Status", info.verificationStatus.toUpperCase(),
+              info.isVerified ? Colors.green : Colors.orange),
+          const SizedBox(height: 8),
+          _buildInfoRow("Bank", info.bankName, Colors.black),
+          const SizedBox(height: 8),
+          _buildInfoRow("Account Holder", info.accountHolderName, Colors.black),
+          const SizedBox(height: 8),
+          _buildInfoRow("Account Type", info.accountType.toUpperCase(), Colors.black),
+          const SizedBox(height: 8),
+          _buildInfoRow("Last Updated",
+              "${info.updatedAt.day}/${info.updatedAt.month}/${info.updatedAt.year}",
+              Colors.grey),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value, Color color) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 }

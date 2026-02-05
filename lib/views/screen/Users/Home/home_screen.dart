@@ -5,11 +5,12 @@ import 'package:naibrly/utils/app_colors.dart';
 import 'package:naibrly/views/base/AppText/appText.dart';
 import 'package:naibrly/views/screen/Users/Home/create_bundle_bottomsheet.dart';
 import 'package:naibrly/widgets/bundle_card.dart';
-import 'package:naibrly/widgets/service_request_card.dart';
+import 'package:naibrly/widgets/money_request_card.dart';
 import 'package:naibrly/services/mock_data_service.dart';
 import '../../../../controller/Customer/bundlesController/createBundle.dart';
 import '../../../../controller/Customer/profileController/profileController.dart';
-import '../../../../controller/Customer/service_request_controller.dart';
+
+import '../../../../controller/Customer/money_request_controller.dart';
 import '../../search/search_results_screen.dart';
 import '../Bundles/bundels_screen.dart';
 
@@ -50,19 +51,18 @@ class _HomeScreenState extends State<HomeScreen> {
   // Controllers
   final ProfileController profileController = Get.put(ProfileController());
   final CreateBundleController bundleController = Get.put(CreateBundleController());
-  final ServiceRequestController serviceRequestController = Get.put(ServiceRequestController());
+  final MoneyRequestController moneyRequestController = Get.put(MoneyRequestController());
 
   @override
   void initState() {
     super.initState();
     _loadBundles();
-    profileController.fetchUserData();
+    _prefillZipCode();
     bundleController.getNaibrlyBundle(context);
-    serviceRequestController.fetchServiceRequests();
+    moneyRequestController.fetchMoneyRequests();
 
     // Set default values
     _popularSearchController.text = "Home Repairs";
-    _zipCodeController.text = "59856";
   }
 
   @override
@@ -80,6 +80,15 @@ class _HomeScreenState extends State<HomeScreen> {
       bundles = MockDataService.getActiveBundles().take(3).toList();
       isLoadingBundles = false;
     });
+  }
+
+  Future<void> _prefillZipCode() async {
+    await profileController.fetchUserData();
+    if (!mounted) return;
+    final zip = profileController.profileInfo.value?.address.zipCode ?? '';
+    if (zip.isNotEmpty && _zipCodeController.text.trim().isEmpty) {
+      _zipCodeController.text = zip;
+    }
   }
 
   void _performSearch() {
@@ -278,7 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
           children: [
-            // Search Bar - NOW FUNCTIONAL
+            // Search Bar
             Container(
               height: 48,
               decoration: BoxDecoration(
@@ -326,7 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         hintText: "59856",
                         border: InputBorder.none,
                         isCollapsed: true,
-                        counterText: "", // Hide character counter
+                        counterText: "",
                         hintStyle: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w400,
@@ -357,21 +366,19 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 10),
 
-            // Service Requests Section - Using GetX Obx
+            // Money Requests Section - Using GetX Obx
             Obx(() {
-              if (serviceRequestController.isLoading.value) {
+              if (moneyRequestController.isLoading.value) {
                 return Column(
                   children: [
                     Row(
                       children: [
                         const AppText(
-                          "Service Requests",
+                          "Payment Requests",
                           fontWeight: FontWeight.w500,
                           fontSize: 14,
                           color: AppColors.black,
                         ),
-                        const SizedBox(width: 12),
-                        SvgPicture.asset("assets/icons/Icon (4).svg"),
                         const Spacer(),
                         const SizedBox(
                           width: 16,
@@ -394,19 +401,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               }
 
-              if (serviceRequestController.error.value.isNotEmpty) {
+              if (moneyRequestController.error.value.isNotEmpty) {
                 return Column(
                   children: [
                     Row(
                       children: [
                         const AppText(
-                          "Service Requests",
+                          "Payment Requests",
                           fontWeight: FontWeight.w500,
                           fontSize: 14,
                           color: AppColors.black,
                         ),
                         const SizedBox(width: 12),
-                        SvgPicture.asset("assets/icons/Icon (4).svg"),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -419,13 +425,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             Icon(Icons.error_outline, color: Colors.red.shade700, size: 32),
                             const SizedBox(height: 8),
                             Text(
-                              serviceRequestController.error.value,
+                              moneyRequestController.error.value,
                               textAlign: TextAlign.center,
                               style: TextStyle(color: Colors.red.shade700),
                             ),
                             const SizedBox(height: 12),
                             ElevatedButton.icon(
-                              onPressed: () => serviceRequestController.refreshServiceRequests(),
+                              onPressed: () => moneyRequestController.refreshMoneyRequests(),
                               icon: const Icon(Icons.refresh),
                               label: const Text('Retry'),
                               style: ElevatedButton.styleFrom(
@@ -441,7 +447,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               }
 
-              final pendingRequests = serviceRequestController.pendingRequests;
+              final pendingRequests = moneyRequestController.pendingRequests;
 
               if (pendingRequests.isEmpty) {
                 return const SizedBox.shrink();
@@ -452,13 +458,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     children: [
                       const AppText(
-                        "Service Requests",
+                        "Payment Requests",
                         fontWeight: FontWeight.w500,
                         fontSize: 14,
                         color: AppColors.black,
                       ),
-                      const SizedBox(width: 12),
-                      SvgPicture.asset("assets/icons/Icon (4).svg"),
                       const Spacer(),
                       AppText(
                         "${pendingRequests.length} Pending",
@@ -469,13 +473,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  ServiceRequestCard.fromServiceRequest(
-                    serviceRequest: pendingRequests.first,
+                  MoneyRequestCard.fromMoneyRequest(
+                    moneyRequest: pendingRequests.first,
                     onAccept: () async {
-                      await serviceRequestController.acceptServiceRequest(pendingRequests.first.id);
+                      await moneyRequestController.acceptAndPayMoneyRequest(pendingRequests.first.id);
                     },
                     onCancel: () async {
-                      await serviceRequestController.cancelServiceRequest(pendingRequests.first.id);
+                      await moneyRequestController.cancelMoneyRequest(pendingRequests.first.id);
                     },
                   ),
                   const SizedBox(height: 20),
@@ -497,8 +501,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         fontSize: 14,
                         color: AppColors.black,
                       ),
-                      const SizedBox(width: 12),
-                      SvgPicture.asset("assets/icons/Icon (4).svg"),
                       const Spacer(),
                       GestureDetector(
                         onTap: () {
@@ -565,6 +567,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             onJoinBundle: () {
                               bundleController.joinNaibrlyBundle(context, bundle.id);
                             },
+                            shareToken: bundle.shareToken,
                           ),
                           if (index < bundleList.length - 1) const SizedBox(height: 12),
                         ],
@@ -611,40 +614,40 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: SizedBox(
-                    height: 42,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const BundelsScreen()),
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        side: const BorderSide(
-                          color: Color(0xFF0E7A60),
-                          width: 1,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        "Naibrly Bundles",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF0E7A60),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ),
+              //  Expanded(
+             //     child: SizedBox(
+               //     height: 42,
+               //     child: OutlinedButton(
+                 //     onPressed: () {
+                 //       Navigator.push(
+                  //        context,
+                  //        MaterialPageRoute(builder: (context) => const BundelsScreen()),
+                  //      );
+                   //   },
+                   //   style: OutlinedButton.styleFrom(
+                   //     backgroundColor: Colors.white,
+                   //     side: const BorderSide(
+                   //       color: Color(0xFF0E7A60),
+                    //      width: 1,
+                    //    ),
+                     //   shape: RoundedRectangleBorder(
+                     //     borderRadius: BorderRadius.circular(12),
+                     //   ),
+                     //   elevation: 0,
+                    //  ),
+                     // child: const Text(
+                     //   "Naibrly Bundles",
+                     //   style: TextStyle(
+                     //     fontSize: 14,
+                     //     fontWeight: FontWeight.w600,
+                     //     color: Color(0xFF0E7A60),
+                     //   ),
+                     //   maxLines: 1,
+                    //    overflow: TextOverflow.ellipsis,
+                    //  ),
+                  //  ),
+                 // ),
+              //  ),
               ],
             ),
 
@@ -659,8 +662,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   fontSize: 14,
                   color: AppColors.black,
                 ),
-                const SizedBox(width: 12),
-                SvgPicture.asset("assets/icons/Icon (4).svg"),
                 const Spacer(),
                 buildLanguageSelector(languages, selectedLanguage),
               ],
