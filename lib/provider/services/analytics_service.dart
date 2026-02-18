@@ -2,12 +2,13 @@
 import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import '../../utils/app_contants.dart';
 import '../../utils/tokenService.dart';
 import '../models/analytics.dart';
 
 
 class AnalyticsService extends GetxService {
-  static const String baseUrl = 'https://naibrly-backend.onrender.com/api';
+  static const String baseUrl = '${AppConstants.BASE_URL}/api';
 
   String? get _token {
     final tokenService = Get.find<TokenService>();

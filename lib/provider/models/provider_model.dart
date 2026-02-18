@@ -18,6 +18,7 @@ class ProviderRegisterRequest {
   final String businessHoursEnd;
   final String hourlyRate;
   final String businessAddressStreet;
+  final String businessAddressAptSuite;
   final String businessAddressCity;
   final String businessAddressState;
   final String businessAddressZipCode;
@@ -42,6 +43,7 @@ class ProviderRegisterRequest {
     required this.businessHoursEnd,
     required this.hourlyRate,
     required this.businessAddressStreet,
+    required this.businessAddressAptSuite,
     required this.businessAddressCity,
     required this.businessAddressState,
     required this.businessAddressZipCode,
@@ -68,6 +70,7 @@ class ProviderRegisterRequest {
       'businessHoursEnd': businessHoursEnd,
       'hourlyRate': hourlyRate,
       'businessAddressStreet': businessAddressStreet,
+      'businessAddressAptSuite': businessAddressAptSuite,
       'businessAddressCity': businessAddressCity,
       'businessAddressState': businessAddressState,
       'businessAddressZipCode': businessAddressZipCode,

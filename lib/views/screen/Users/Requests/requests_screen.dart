@@ -14,10 +14,26 @@ import '../../../../controller/Customer/request_controller.dart';
 import '../../../../models/user_request1.dart';
 import '../Request/user_quick_chats_screen.dart' hide UserRequestInboxScreen;
 
-class RequestScreen extends StatelessWidget {
-  RequestScreen({super.key});
+class RequestScreen extends StatefulWidget {
+  const RequestScreen({super.key});
 
+  @override
+  State<RequestScreen> createState() => _RequestScreenState();
+}
+
+class _RequestScreenState extends State<RequestScreen> {
   final RequestController controller = Get.find<RequestController>();
+  bool _didInitialLoad = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (_didInitialLoad) return;
+      _didInitialLoad = true;
+      await controller.refreshRequests();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

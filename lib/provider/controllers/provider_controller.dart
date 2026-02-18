@@ -33,6 +33,7 @@ class ProviderController extends GetxController {
   var businessHoursEnd = ''.obs;
   var hourlyRate = ''.obs;
   var businessAddressStreet = ''.obs;
+  var businessAddressAptSuite = ''.obs;
   var businessAddressCity = ''.obs;
   var businessAddressState = ''.obs;
   var businessAddressZipCode = ''.obs;
@@ -74,6 +75,7 @@ class ProviderController extends GetxController {
         businessHoursEnd: businessHoursEnd.value,
         hourlyRate: hourlyRate.value,
         businessAddressStreet: businessAddressStreet.value,
+        businessAddressAptSuite: businessAddressAptSuite.value,
         businessAddressCity: businessAddressCity.value,
         businessAddressState: businessAddressState.value,
         businessAddressZipCode: businessAddressZipCode.value,
@@ -214,6 +216,7 @@ class ProviderController extends GetxController {
     businessHoursEnd('');
     hourlyRate('');
     businessAddressStreet('');
+    businessAddressAptSuite('');
     businessAddressCity('');
     businessAddressState('');
     businessAddressZipCode('');

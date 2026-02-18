@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:naibrly/models/user_request1.dart';
 import 'package:naibrly/utils/app_colors.dart';
+import 'package:naibrly/utils/app_contants.dart';
 import 'package:naibrly/views/base/AppText/appText.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
@@ -30,7 +31,7 @@ class _ReviewConfirmScreenState extends State<ReviewConfirmScreen> {
   double _tipAmount = 0.0;
   bool _isProcessingPayment = false;
   bool _isLoading = true;
-  final String _baseUrl = 'https://ungustatory-erringly-ralph.ngrok-free.dev';
+  final String _baseUrl = AppConstants.BASE_URL;
 
   Map<String, dynamic>? _moneyRequestData;
   double _baseAmount = 0.0;
@@ -181,7 +182,7 @@ class _ReviewConfirmScreenState extends State<ReviewConfirmScreen> {
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
-          'reason': 'Payment confirmed by customer',
+          'tipAmount': _tipAmount,
         }),
       );
 

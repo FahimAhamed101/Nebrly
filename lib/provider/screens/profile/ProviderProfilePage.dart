@@ -6,6 +6,7 @@ import 'package:flutter_advanced_switch/flutter_advanced_switch.dart';
 import '../../../widgets/payment_confirmation_bottom_sheet.dart';
 
 import '../../controllers/ProviderProfileController.dart';
+import '../../controllers/feedback_controller.dart';
 import '../../widgets/profile/address_change_section.dart';
 import '../../widgets/profile/my_information_section.dart';
 import '../../widgets/profile/my_services_section.dart';
@@ -13,6 +14,7 @@ import '../../widgets/profile/payout_information_section.dart';
 import '../../widgets/profile/profile_header.dart';
 import '../../widgets/profile/service_area_section.dart';
 import '../../widgets/profile/settings_section.dart';
+import '../../widgets/home/client_feedback_section.dart';
 
 class ProviderProfilePage extends StatefulWidget {
   const ProviderProfilePage({super.key});
@@ -23,6 +25,7 @@ class ProviderProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProviderProfilePage> {
   final ProviderProfileController profileController = Get.find<ProviderProfileController>();
+  final FeedbackController feedbackController = Get.find<FeedbackController>();
   bool _notificationsExpanded = false;
   final ValueNotifier<bool> _textMsgController = ValueNotifier<bool>(false);
   final ValueNotifier<bool> _emailController = ValueNotifier<bool>(true);
@@ -34,6 +37,7 @@ class _ProfilePageState extends State<ProviderProfilePage> {
     // Refresh profile when page loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       profileController.refreshProfile();
+      feedbackController.loadFeedback();
     });
   }
 
@@ -90,6 +94,23 @@ class _ProfilePageState extends State<ProviderProfilePage> {
 
                 const SizedBox(height: 30),
                 const AddressChangeSection(),
+
+                const SizedBox(height: 30),
+                Obx(() {
+                  if (feedbackController.isLoading.value && feedbackController.feedbackList.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  return ClientFeedbackSection(
+                    feedbackList: feedbackController.feedbackList,
+                    onToggleExpansion: feedbackController.toggleExpansion,
+                    onLoadMore: feedbackController.hasMore.value
+                        ? feedbackController.loadMoreFeedback
+                        : null,
+                    hasMoreFeedback: feedbackController.hasMore.value,
+                    margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+                  );
+                }),
 
                 const SizedBox(height: 20),
 

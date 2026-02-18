@@ -28,7 +28,7 @@ class RequestController extends GetxController {
     // Delay loading to ensure token is ready
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _initUserRole();
-      if (userRole.value.isNotEmpty) {
+      if (await _hasAuthToken()) {
         await loadRequests();
       }
     });
@@ -36,9 +36,21 @@ class RequestController extends GetxController {
 
   Future<void> _initUserRole() async {
     await _tokenService.init();
+    final token = _tokenService.getToken();
     final role = _tokenService.getUserRole();
+    if (token == null || token.isEmpty) {
+      userRole.value = '';
+      print('RequestController initialized with no token');
+      return;
+    }
     userRole.value = role ?? 'customer';
-    print("🎯 RequestController initialized for: ${userRole.value}");
+    print('RequestController initialized for: ${userRole.value}');
+  }
+
+  Future<bool> _hasAuthToken() async {
+    await _tokenService.init();
+    final token = _tokenService.getToken();
+    return token != null && token.isNotEmpty;
   }
 
   void changeFilter(RequestFilter filter) {
@@ -55,6 +67,11 @@ class RequestController extends GetxController {
 
   Future<void> loadRequests({bool loadMore = false}) async {
     if (isLoading.value) return;
+
+    if (!await _hasAuthToken()) {
+      errorMessage.value = 'Please log in to view requests';
+      return;
+    }
 
     try {
       isLoading.value = true;
@@ -268,3 +285,4 @@ class RequestController extends GetxController {
     await loadRequests();
   }
 }
+

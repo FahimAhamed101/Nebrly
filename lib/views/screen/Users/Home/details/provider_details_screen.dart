@@ -3,10 +3,7 @@ import 'package:naibrly/utils/app_colors.dart';
 import 'package:naibrly/views/base/AppText/appText.dart';
 import 'package:naibrly/provider/models/client_feedback.dart';
 import 'package:naibrly/provider/widgets/home/client_feedback_section.dart';
-import 'package:naibrly/widgets/payment_confirmation_bottom_sheet.dart';
 import 'package:naibrly/widgets/naibrly_now_bottom_sheet.dart';
-import 'package:naibrly/provider/services/api_service.dart';
-import 'dart:convert';
 
 import '../../../../../services/api_service.dart';
 
@@ -38,7 +35,10 @@ class ProviderDetailsScreen extends StatefulWidget {
 
 class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
   final List<ClientFeedback> _feedbackList = [];
-  final bool _hasMoreFeedback = true;
+  bool _hasMoreFeedback = false;
+  int _feedbackPage = 1;
+  int _feedbackTotalPages = 1;
+  bool _isLoadingFeedback = false;
   bool isLoadingProviderData = false;
   String errorMessage = '';
   Map<String, dynamic>? providerData;
@@ -47,8 +47,6 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadInitialFeedback();
-
     // Fetch provider data if providerId is available
     if (widget.providerId != null && widget.selectedServiceName != null) {
       _fetchProviderData();
@@ -100,6 +98,8 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
             otherServices = List<dynamic>.from(providerData!['otherServices']);
             print('✅ otherServices set: ${otherServices.length} services');
           }
+
+          _applyFeedbackFromResponse(providerData!, replace: true);
           isLoadingProviderData = false;
         });
 
@@ -126,19 +126,98 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
     }
   }
 
-  void _loadInitialFeedback() {
-    // Load initial feedback
+  void _applyFeedbackFromResponse(Map<String, dynamic> data, {required bool replace}) {
+    final feedbackData = data['feedback'];
+    if (feedbackData == null || feedbackData is! Map<String, dynamic>) {
+      _hasMoreFeedback = false;
+      return;
+    }
+
+    final list = feedbackData['list'] as List? ?? [];
+    final parsed = list.map((item) => _parseFeedbackItem(item)).toList();
+
+    if (replace) {
+      _feedbackList
+        ..clear()
+        ..addAll(parsed);
+    } else {
+      _feedbackList.addAll(parsed);
+    }
+
+    final pagination = feedbackData['pagination'] as Map<String, dynamic>? ?? {};
+    _feedbackPage = pagination['current'] ?? 1;
+    _feedbackTotalPages = pagination['pages'] ?? 1;
+    _hasMoreFeedback = _feedbackPage < _feedbackTotalPages;
   }
 
   void _loadMoreFeedback() {
+    if (_isLoadingFeedback || !_hasMoreFeedback) return;
+
+    _loadFeedbackPage(_feedbackPage + 1);
+  }
+
+  Future<void> _loadFeedbackPage(int page) async {
+    if (widget.providerId == null || widget.selectedServiceName == null) return;
+    if (_isLoadingFeedback) return;
+
     setState(() {
-      final currentCount = _feedbackList.length;
+      _isLoadingFeedback = true;
     });
+
+    try {
+      final response = await MainApiService.getProviderServiceDetails(
+        widget.providerId!,
+        widget.selectedServiceName!,
+        page: page,
+        limit: 10,
+      );
+
+      if (response['success'] == true && response['data'] != null) {
+        setState(() {
+          _applyFeedbackFromResponse(response['data'], replace: page == 1);
+        });
+      }
+    } catch (e) {
+      print('❌ Error loading feedback page $page: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingFeedback = false;
+        });
+      }
+    }
+  }
+
+  ClientFeedback _parseFeedbackItem(dynamic raw) {
+    final Map<String, dynamic> item = raw is Map<String, dynamic> ? Map<String, dynamic>.from(raw) : {};
+    final Map<String, dynamic> customer = item['customer'] is Map<String, dynamic>
+        ? Map<String, dynamic>.from(item['customer'])
+        : {};
+
+    final profileImage = customer['profileImage'];
+    if (profileImage == null) {
+      customer['profileImage'] = {'url': ''};
+    } else if (profileImage is String) {
+      customer['profileImage'] = {'url': profileImage};
+    }
+
+    item['customer'] = customer;
+
+    if (item['id'] == null || (item['id'] is String && (item['id'] as String).isEmpty)) {
+      final customerId = customer['_id'] ?? customer['id'] ?? '';
+      final createdAt = item['createdAt'] ?? '';
+      item['id'] = '$customerId-$createdAt';
+    }
+
+    return ClientFeedback.fromJson(item);
   }
 
   void _toggleFeedbackExpansion(String feedbackId) {
     setState(() {
       final feedbackIndex = _feedbackList.indexWhere((fb) => fb.id == feedbackId);
+      if (feedbackIndex != -1) {
+        _feedbackList[feedbackIndex].isExpanded = !_feedbackList[feedbackIndex].isExpanded;
+      }
     });
   }
 

@@ -73,6 +73,11 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
 
   // Track if we're currently processing payment
   bool _isProcessingPayment = false;
+  bool _isCancellingPayment = false;
+  bool _isSubmittingReview = false;
+  Review? _existingReview;
+  int _pendingReviewRating = 0;
+  String _pendingReviewComment = '';
 
   @override
   void initState() {
@@ -92,6 +97,12 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
       _cancellationReason = widget.request.cancellationReason ??
           'The service was no longer required due to unforeseen circumstances.';
       _cancellationTime = widget.request.cancellationTime ?? DateTime.now();
+    }
+
+    _existingReview = widget.request.review;
+    if (_existingReview != null) {
+      _pendingReviewRating = _existingReview?.rating ?? 0;
+      _pendingReviewComment = _existingReview?.comment ?? '';
     }
 
     if (widget.request.status.toLowerCase() == 'completed' ||
@@ -169,6 +180,27 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
     } catch (e) {
       if (kDebugMode) {
         print('❌ Error checking money requests: $e');
+      }
+    }
+  }
+
+  Future<void> _refreshMoneyRequestData() async {
+    await _checkMoneyRequests();
+
+    if (widget.requestId != null) {
+      await _paymentController.loadMoneyRequestDetails(
+        serviceRequestId: widget.requestId!,
+      );
+      if (mounted) {
+        setState(() {
+          _showCompletionRequest = _paymentController.moneyRequestDetails != null;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _showCompletionRequest = _paymentController.hasMoneyRequest;
+        });
       }
     }
   }
@@ -356,9 +388,15 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
     });
 
     // Listen for specific new messages
-    _specificMessageSubscription = _socketController.messageStream.listen((message) {
+    _specificMessageSubscription = _socketController.messageStream.listen((message) async {
+      final type = message['type']?.toString() ?? 'unknown';
+
       if (kDebugMode) {
-        print('📨 Specific message received: ${message['content']}');
+        print('📨 Specific message received: $type');
+      }
+
+      if (_shouldRefreshPaymentFromMessage(message)) {
+        await _refreshMoneyRequestData();
       }
 
       // Check if this message belongs to our conversation
@@ -378,10 +416,46 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
   }
 
   bool _checkMessageBelongsToConversation(Map<String, dynamic> message) {
-    final requestId = message['requestId']?.toString();
-    final bundleId = message['bundleId']?.toString();
-    final customerId = message['customerId']?.toString();
+    final data = _unwrapSocketMessage(message);
+    final requestId = data['requestId']?.toString() ?? data['serviceRequestId']?.toString();
+    final bundleId = data['bundleId']?.toString();
+    final customerId = data['customerId']?.toString();
+    final link = _extractLinkFromMessage(message);
 
+    return _matchesConversation(
+      requestId: requestId,
+      bundleId: bundleId,
+      customerId: customerId,
+      link: link,
+    );
+  }
+
+  Map<String, dynamic> _unwrapSocketMessage(Map<String, dynamic> message) {
+    final data = message['data'];
+    if (data is Map<String, dynamic>) {
+      final innerMessage = data['message'];
+      if (innerMessage is Map<String, dynamic>) {
+        return Map<String, dynamic>.from(innerMessage);
+      }
+      return Map<String, dynamic>.from(data);
+    }
+    return message;
+  }
+
+  String? _extractLinkFromMessage(Map<String, dynamic> message) {
+    final data = message['data'];
+    if (data is Map<String, dynamic> && data['link'] != null) {
+      return data['link']?.toString();
+    }
+    return null;
+  }
+
+  bool _matchesConversation({
+    String? requestId,
+    String? bundleId,
+    String? customerId,
+    String? link,
+  }) {
     if (widget.requestId != null && requestId == widget.requestId) {
       return true;
     }
@@ -392,6 +466,65 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
 
     if (widget.customerId != null && customerId == widget.customerId) {
       return true;
+    }
+
+    if (link != null) {
+      if (widget.requestId != null && link.contains('request-${widget.requestId}')) {
+        return true;
+      }
+      if (widget.bundleId != null && link.contains('bundle-${widget.bundleId}')) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  bool _shouldRefreshPaymentFromMessage(Map<String, dynamic> message) {
+    final type = message['type']?.toString() ?? '';
+    final data = _unwrapSocketMessage(message);
+    final content = data['content']?.toString();
+    final meta = data['meta'];
+    final link = _extractLinkFromMessage(message);
+
+    final requestId = data['requestId']?.toString() ?? data['serviceRequestId']?.toString();
+    final bundleId = data['bundleId']?.toString();
+    final customerId = data['customerId']?.toString();
+    String? metaRequestId;
+    String? metaBundleId;
+    if (meta is Map) {
+      metaRequestId = meta['serviceRequestId']?.toString() ?? meta['requestId']?.toString();
+      metaBundleId = meta['bundleId']?.toString();
+    }
+
+    final effectiveRequestId = requestId ?? metaRequestId;
+    final effectiveBundleId = bundleId ?? metaBundleId;
+
+    if (type == 'money_request_created') {
+      return _matchesConversation(
+        requestId: effectiveRequestId,
+        bundleId: effectiveBundleId,
+        customerId: customerId,
+        link: link,
+      );
+    }
+
+    if (type == 'notification') {
+      return _matchesConversation(
+        requestId: effectiveRequestId,
+        bundleId: effectiveBundleId,
+        customerId: customerId,
+        link: link,
+      );
+    }
+
+    if (type == 'new_message' && (content == '__MONEY_REQUEST__' || meta != null)) {
+      return _matchesConversation(
+        requestId: effectiveRequestId,
+        bundleId: effectiveBundleId,
+        customerId: customerId,
+        link: link,
+      );
     }
 
     return false;
@@ -682,16 +815,23 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
   }
 
   void _handleCancelCompletion() {
-    setState(() {
-      _showCompletionRequest = false;
-    });
+    final moneyRequest = _paymentController.moneyRequestDetails;
+    final moneyRequestId = moneyRequest?['_id']?.toString();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Task completion cancelled.'),
-        backgroundColor: Colors.orange,
-      ),
-    );
+    if (moneyRequestId == null || moneyRequestId.isEmpty) {
+      setState(() {
+        _showCompletionRequest = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Task completion cancelled.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    _cancelMoneyRequest(moneyRequestId);
   }
 
   void _showTaskCompletionOverlayDialog() {
@@ -2170,6 +2310,12 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
   }
 
   Widget _buildFeedbackMessage() {
+    final isCustomer = _userRole?.toLowerCase() == 'customer';
+    final review = _existingReview;
+    final hasReview = review != null && (review.rating ?? 0) > 0;
+    final ratingValue = review?.rating ?? 0;
+    final comment = (review?.comment ?? '').trim();
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -2200,7 +2346,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
           ),
           const SizedBox(height: 12),
           AppText(
-            'Received feedback from the provider',
+            hasReview ? 'Your Review' : 'Rate your provider',
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: AppColors.Black,
@@ -2208,67 +2354,109 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
           ),
           const SizedBox(height: 8),
           AppText(
-            'Thank you for your order! It was a pleasure working on your request. I hope the service met your expectations. Please feel free to reach out if you need anything else!',
+            hasReview
+                ? (comment.isNotEmpty
+                ? comment
+                : 'You left a rating without a written comment.')
+                : 'Share your experience to help others choose the right provider.',
             fontSize: 12,
             fontWeight: FontWeight.w400,
             color: AppColors.DarkGray,
             textAlign: TextAlign.center,
-            maxLines: 3,
+            maxLines: hasReview ? 4 : 3,
           ),
           const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              5,
-                  (index) => const Icon(
-                Icons.star,
-                color: Colors.amber,
-                size: 18,
+          _buildStarRow(ratingValue),
+          const SizedBox(height: 12),
+          if (hasReview) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _showFeedback = false;
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[100],
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  elevation: 0,
+                ),
+                child: AppText(
+                  'Done',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.Black,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
+          ] else if (isCustomer) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _openReviewBottomSheet,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0E7A60),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 0,
+                ),
+                child: AppText(
+                  'Leave Review',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
               onPressed: () {
                 setState(() {
                   _showFeedback = false;
                 });
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[100],
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(color: Colors.grey[300]!),
-                ),
-                elevation: 0,
-              ),
               child: AppText(
-                'Done',
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.Black,
+                'Maybe later',
+                fontSize: 11,
+                fontWeight: FontWeight.w400,
+                color: AppColors.DarkGray,
+                decoration: TextDecoration.underline,
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed: () {
-              // Handle report provider
-            },
-            child: AppText(
-              'Report Provider',
-              fontSize: 11,
+          ] else ...[
+            AppText(
+              'Waiting for customer review.',
+              fontSize: 12,
               fontWeight: FontWeight.w400,
               color: AppColors.DarkGray,
-              decoration: TextDecoration.underline,
+              textAlign: TextAlign.center,
             ),
-          ),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _buildStarRow(int rating) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(5, (index) {
+        final filled = index < rating;
+        return Icon(
+          filled ? Icons.star : Icons.star_border,
+          color: filled ? Colors.amber : Colors.grey.shade400,
+          size: 18,
+        );
+      }),
     );
   }
 
@@ -2324,7 +2512,12 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
     final moneyRequest = _paymentController.moneyRequestDetails;
     final hasPaymentRequest = moneyRequest != null;
     final paymentStatus = hasPaymentRequest ? (moneyRequest!['status'] as String? ?? 'pending') : 'pending';
-    final amount = hasPaymentRequest ? (moneyRequest!['amount'] as int? ?? widget.request.averagePrice.toInt()) : widget.request.averagePrice.toInt();
+    final baseAmount = hasPaymentRequest
+        ? (moneyRequest!['amount'] as int? ?? widget.request.averagePrice.toInt())
+        : widget.request.averagePrice.toInt();
+    final totalAmount = hasPaymentRequest
+        ? (moneyRequest!['totalAmount'] as int? ?? baseAmount)
+        : baseAmount;
     final isPaid = paymentStatus.toLowerCase() == 'paid' || paymentStatus.toLowerCase() == 'completed';
 
     return Container(
@@ -2358,7 +2551,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
               ),
               const SizedBox(width: 6),
               AppText(
-                '\$$amount/${isPaid ? 'consult' : 'payment'}',
+                '\$$totalAmount/${isPaid ? 'consult' : 'payment'}',
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF0E7A60),
@@ -2438,7 +2631,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: _handleCancelCompletion,
+                    onPressed: _isCancellingPayment ? null : _handleCancelCompletion,
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.red, width: 1),
                       shape: RoundedRectangleBorder(
@@ -2446,7 +2639,16 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
-                    child: AppText(
+                    child: _isCancellingPayment
+                        ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                      ),
+                    )
+                        : AppText(
                       'Cancel',
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -2459,7 +2661,7 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
 
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: _handleAcceptPayment,
+                    onPressed: (_isProcessingPayment || _isCancellingPayment) ? null : _handleAcceptPayment,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0E7A60),
                       shape: RoundedRectangleBorder(
@@ -2591,12 +2793,8 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
           ),
         );
 
-        // Reload money request details to update status
-        if (widget.requestId != null) {
-          await _paymentController.loadMoneyRequestDetails(
-            serviceRequestId: widget.requestId!,
-          );
-        }
+        await _refreshMoneyRequestData();
+        _maybePromptForReview();
       }
     } catch (e) {
       if (kDebugMode) {
@@ -2623,6 +2821,10 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
     final moneyRequest = _paymentController.moneyRequestDetails;
     if (moneyRequest == null) return;
 
+    final amount = moneyRequest['amount'] ?? 0;
+    final tipAmount = moneyRequest['tipAmount'] ?? 0;
+    final totalAmount = moneyRequest['totalAmount'] ?? amount;
+
     // Show payment details dialog or navigate to receipt screen
     showDialog(
       context: context,
@@ -2632,7 +2834,9 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Amount: \$${moneyRequest['amount']}'),
+            Text('Amount: \$$amount'),
+            if (tipAmount != 0) Text('Tip: \$$tipAmount'),
+            Text('Total: \$$totalAmount'),
             Text('Status: ${moneyRequest['status']}'),
             if (moneyRequest['paymentDetails'] != null)
               Text('Method: ${moneyRequest['paymentDetails']?['paymentMethod'] ?? 'N/A'}'),
@@ -2648,6 +2852,237 @@ class _UserRequestInboxScreenState extends State<UserRequestInboxScreen> {
         ],
       ),
     );
+  }
+
+  void _maybePromptForReview() {
+    final isCustomer = _userRole?.toLowerCase() == 'customer';
+    final isCompleted = widget.request.status.toLowerCase() == 'completed' ||
+        widget.request.status.toLowerCase() == 'done';
+    final paymentStatus = _paymentController.moneyRequestDetails?['status']?.toString().toLowerCase();
+    final isPaid = paymentStatus == 'paid' || paymentStatus == 'completed';
+
+    if (isCustomer && isCompleted && isPaid && _existingReview == null && mounted) {
+      Future.delayed(const Duration(milliseconds: 300), _openReviewBottomSheet);
+    }
+  }
+
+  void _openReviewBottomSheet() {
+    if (_isSubmittingReview) return;
+
+    int selectedRating = _pendingReviewRating;
+    String feedback = _pendingReviewComment;
+
+    showCustomBottomSheet(
+      context: context,
+      topIcon: const Icon(Icons.star, color: Color(0xFF0E7A60), size: 40),
+      topIconBackgroundColor: const Color(0xFFEFFAF6),
+      title: 'Leave a Review',
+      description: 'Share your experience with this service.',
+      primaryButtonText: 'Submit Review',
+      secondaryButtonText: 'Cancel',
+      showSecondaryButton: true,
+      showRating: true,
+      showFeedback: true,
+      onRatingChanged: (rating) {
+        selectedRating = rating;
+      },
+      onFeedbackChanged: (value) {
+        feedback = value;
+      },
+      onPrimaryButtonTap: () async {
+        Navigator.of(context).pop();
+        await _submitReview(selectedRating, feedback);
+      },
+      onSecondaryButtonTap: () => Navigator.of(context).pop(),
+      primaryButtonColor: const Color(0xFF0E7A60),
+      secondaryButtonColor: Colors.grey.shade200,
+      secondaryButtonTextColor: Colors.black87,
+      containerHeight: 450,
+    );
+  }
+
+  Future<void> _submitReview(int rating, String comment) async {
+    if (_isSubmittingReview) return;
+
+    final isCustomer = _userRole?.toLowerCase() == 'customer';
+    if (!isCustomer) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Only customers can submit reviews.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (rating < 1 || rating > 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a rating between 1 and 5.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final token = _tokenService.getToken();
+    if (token == null || token.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('User not authenticated'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final endpoint = widget.bundleId != null
+        ? '${AppConstants.BASE_URL}/api/bundles/${widget.bundleId}/review'
+        : (widget.requestId != null
+        ? '${AppConstants.BASE_URL}/api/service-requests/${widget.requestId}/review'
+        : null);
+
+    if (endpoint == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to submit review: missing request information'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSubmittingReview = true;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse(endpoint),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'rating': rating,
+          'comment': comment.trim(),
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = jsonDecode(response.body);
+        final success = responseData['success'] == true;
+
+        if (!success) {
+          throw Exception(responseData['message'] ?? 'Failed to submit review');
+        }
+
+        setState(() {
+          _existingReview = Review(
+            rating: rating,
+            comment: comment.trim(),
+            createdAt: DateTime.now(),
+          );
+          _pendingReviewRating = rating;
+          _pendingReviewComment = comment.trim();
+          _showFeedback = true;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Review submitted successfully!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } else {
+        final errorData = jsonDecode(response.body);
+        final message = errorData['message'] ?? 'Failed to submit review';
+        throw Exception(message);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Error submitting review: $e');
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to submit review: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmittingReview = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _cancelMoneyRequest(String moneyRequestId) async {
+    if (_isCancellingPayment) return;
+
+    final token = _tokenService.getToken();
+    if (token == null || token.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('User not authenticated'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isCancellingPayment = true;
+    });
+
+    try {
+      final response = await http.patch(
+        Uri.parse('${AppConstants.BASE_URL}/api/money-requests/$moneyRequestId/cancel'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        await _refreshMoneyRequestData();
+        if (mounted) {
+          setState(() {
+            _showCompletionRequest = false;
+          });
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment request cancelled.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        final errorData = jsonDecode(response.body);
+        final message = errorData['message'] ?? 'Failed to cancel payment request';
+        throw Exception(message);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Error cancelling payment request: $e');
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to cancel payment: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCancellingPayment = false;
+        });
+      }
+    }
   }
 
   String _formatTime(DateTime timestamp) {

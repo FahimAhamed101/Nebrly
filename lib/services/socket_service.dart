@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
+import '../utils/app_contants.dart';
 import '../utils/tokenService.dart';
 
 class SocketService extends GetxService {
@@ -78,7 +79,7 @@ class SocketService extends GetxService {
       _initializationCompleter = Completer<void>();
 
       _socket = IO.io(
-        'https://naibrly-backend.onrender.com',
+        AppConstants.BASE_URL,
         IO.OptionBuilder()
             .setTransports(['websocket', 'polling'])
             .disableAutoConnect()

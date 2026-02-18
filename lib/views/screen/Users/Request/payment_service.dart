@@ -156,7 +156,7 @@ class PaymentService extends GetxService {
         return [];
       }
 
-      final url = Uri.parse('${AppConstants.BASE_URL}/api/money-requests/request/$requestId');
+      final url = Uri.parse('${AppConstants.BASE_URL}/api/money-requests/$requestId');
 
       final response = await http.get(
         url,
@@ -171,7 +171,8 @@ class PaymentService extends GetxService {
         final success = responseData['success'] ?? false;
 
         if (success) {
-          return responseData['data']?['moneyRequests'] ?? [];
+          final moneyRequest = responseData['data']?['moneyRequest'];
+          return moneyRequest != null ? [moneyRequest] : [];
         }
       }
       return [];

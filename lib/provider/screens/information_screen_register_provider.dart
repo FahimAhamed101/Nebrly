@@ -25,7 +25,63 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
 
   String selectedCountryCode = "+1";
 
-  final List<String> roleOptions = ["owner", "manager", "operator"];
+  String? selectedRole;
+  String? selectedState;
+
+  final List<String> roleOptions = ["Owner", "Manager", "Employee"];
+  final List<String> stateOptions = [
+    "AL",
+    "AK",
+    "AZ",
+    "AR",
+    "CA",
+    "CO",
+    "CT",
+    "DE",
+    "FL",
+    "GA",
+    "HI",
+    "ID",
+    "IL",
+    "IN",
+    "IA",
+    "KS",
+    "KY",
+    "LA",
+    "ME",
+    "MD",
+    "MA",
+    "MI",
+    "MN",
+    "MS",
+    "MO",
+    "MT",
+    "NE",
+    "NV",
+    "NH",
+    "NJ",
+    "NM",
+    "NY",
+    "NC",
+    "ND",
+    "OH",
+    "OK",
+    "OR",
+    "PA",
+    "RI",
+    "SC",
+    "SD",
+    "TN",
+    "TX",
+    "UT",
+    "VT",
+    "VA",
+    "WA",
+    "WV",
+    "WI",
+    "WY",
+    "DC",
+  ];
   List<String> selectedServices = [];
   final List<String> availableServices = [
     "Home Repairs & Maintenance",
@@ -45,14 +101,11 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController businessNameRegisteredController = TextEditingController();
   final TextEditingController businessNameDBAController = TextEditingController();
-  final TextEditingController businessPhoneController = TextEditingController();
   final TextEditingController websiteController = TextEditingController();
   final TextEditingController hourlyRateController = TextEditingController(text: "30");
   final TextEditingController businessAddressStreetController = TextEditingController();
-  final TextEditingController businessAddressCityController = TextEditingController();
-  final TextEditingController businessAddressStateController = TextEditingController();
+  final TextEditingController businessAddressAptSuiteController = TextEditingController();
   final TextEditingController businessAddressZipCodeController = TextEditingController();
-  final TextEditingController experienceController = TextEditingController(text: "5");
 
   // Business hours state
   List<DayHours> businessHours = [
@@ -90,14 +143,11 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
     phoneController.dispose();
     businessNameRegisteredController.dispose();
     businessNameDBAController.dispose();
-    businessPhoneController.dispose();
     websiteController.dispose();
     hourlyRateController.dispose();
     businessAddressStreetController.dispose();
-    businessAddressCityController.dispose();
-    businessAddressStateController.dispose();
+    businessAddressAptSuiteController.dispose();
     businessAddressZipCodeController.dispose();
-    experienceController.dispose();
     super.dispose();
   }
 
@@ -185,8 +235,10 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
         phoneController.text.isEmpty ||
         businessNameRegisteredController.text.isEmpty ||
         businessAddressStreetController.text.isEmpty ||
-        businessAddressCityController.text.isEmpty ||
-        businessAddressStateController.text.isEmpty ||
+        selectedRole == null ||
+        selectedRole!.isEmpty ||
+        selectedState == null ||
+        selectedState!.isEmpty ||
         businessAddressZipCodeController.text.isEmpty) {
       Get.snackbar(
         'Error',
@@ -211,6 +263,7 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
 
     // Extract business hours
     final hours = _extractBusinessHours();
+    final fullPhone = '$selectedCountryCode${phoneController.text.trim()}';
 
     // Update controller values from text fields
     providerController.firstName(firstNameController.text.trim());
@@ -218,10 +271,11 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
     providerController.email(emailController.text.trim());
     providerController.password(passwordController.text);
     providerController.confirmPassword(confirmPasswordController.text);
-    providerController.phone('$selectedCountryCode${phoneController.text.trim()}');
+    providerController.phone(fullPhone);
     providerController.businessNameRegistered(businessNameRegisteredController.text.trim());
     providerController.businessNameDBA(businessNameDBAController.text.trim());
-    providerController.businessPhone(businessPhoneController.text.trim());
+    providerController.providerRole((selectedRole ?? '').toLowerCase());
+    providerController.businessPhone(fullPhone);
     providerController.website(websiteController.text.trim());
     providerController.servicesProvided(selectedServices.join(','));
     providerController.businessServiceStart(hours['businessServiceStart']);
@@ -230,10 +284,10 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
     providerController.businessHoursEnd(hours['businessHoursEnd']);
     providerController.hourlyRate(hourlyRateController.text.trim());
     providerController.businessAddressStreet(businessAddressStreetController.text.trim());
-    providerController.businessAddressCity(businessAddressCityController.text.trim());
-    providerController.businessAddressState(businessAddressStateController.text.trim());
+    providerController.businessAddressAptSuite(businessAddressAptSuiteController.text.trim());
+    providerController.businessAddressCity('');
+    providerController.businessAddressState(selectedState ?? '');
     providerController.businessAddressZipCode(businessAddressZipCodeController.text.trim());
-    providerController.experience(experienceController.text.trim());
 
     // Call registration
     providerController.registerProvider();
@@ -241,6 +295,11 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final labelStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: KoreColors.primary
+    );
+
     return Scaffold(
       backgroundColor: KoreColors.background,
       appBar: AppBar(
@@ -248,7 +307,7 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Get.back(),
+          onPressed: () => Navigator.of(context).maybePop(),
         ),
         title: const Text(
           "Your Information",
@@ -316,7 +375,7 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
               // First Name
               KoreTextField(
                 label: "First Name",
-                hint: "Jacob",
+                hint: "Enter first name",
                 controller: firstNameController,
               ),
               const SizedBox(height: 16),
@@ -324,7 +383,7 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
               // Last Name
               KoreTextField(
                 label: "Last Name",
-                hint: "Meikle",
+                hint: "Enter last name",
                 controller: lastNameController,
               ),
               const SizedBox(height: 16),
@@ -344,6 +403,18 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
                 hint: "Enter your password",
                 controller: passwordController,
                 isPassword: true,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                "Password must include:\n"
+                "- Minimum 6 characters\n"
+                "- 1 number\n"
+                "- 1 capital letter\n"
+                "- 1 special character",
+                style: TextStyle(
+                  color: Color(0xFF7A7A7A),
+                  fontSize: 12,
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -365,46 +436,61 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
               CustomSingleSelectDropdown(
                 hint: "Select your role",
                 items: roleOptions,
-                selectedItem: providerController.providerRole.value,
+                selectedItem: selectedRole,
                 onChanged: (value) {
-                  if (value != null) {
-                    providerController.providerRole(value);
-                  }
+                  setState(() {
+                    selectedRole = value;
+                  });
                 },
               ),
               const SizedBox(height: 16),
 
               // Business Address Street
               KoreTextField(
-                label: "Business Address Street",
-                hint: "123 Main Street",
+                label: "Business Street Number and Name",
+                hint: "Street number and name",
                 controller: businessAddressStreetController,
               ),
               const SizedBox(height: 16),
 
-              // Business Address City, State, Zip Code Row
+              // Apt / Suite
+              KoreTextField(
+                label: "Apt / Suite",
+                hint: "Apt or Suite (optional)",
+                controller: businessAddressAptSuiteController,
+              ),
+              const SizedBox(height: 16),
+
+              // State and Zip Code Row
               Row(
                 children: [
                   Expanded(
-                    child: KoreTextField(
-                      label: "City",
-                      hint: "New York",
-                      controller: businessAddressCityController,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: KoreTextField(
-                      label: "State",
-                      hint: "NY",
-                      controller: businessAddressStateController,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "State",
+                          style: labelStyle,
+                        ),
+                        const SizedBox(height: 6),
+                        CustomSingleSelectDropdown(
+                          hint: "Select state",
+                          items: stateOptions,
+                          selectedItem: selectedState,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedState = value;
+                            });
+                          },
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: KoreTextField(
                       label: "Zip Code",
-                      hint: "10001",
+                      hint: "Zip Code",
                       controller: businessAddressZipCodeController,
                       keyboardType: TextInputType.number,
                     ),
@@ -454,7 +540,7 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
                     child: TextField(
                       controller: phoneController,
                       decoration: InputDecoration(
-                        hintText: "Phone Number",
+                        hintText: "Enter phone number",
                         filled: true,
                         fillColor: Colors.white,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -475,15 +561,6 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 16),
-
-              // Business Phone
-              KoreTextField(
-                label: "Business Phone",
-                hint: "+12395550110",
-                controller: businessPhoneController,
-                keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 16),
 
@@ -560,15 +637,6 @@ class _YourInformationScreenState extends State<YourInformationScreen> {
                     selectedServices = selected;
                   });
                 },
-              ),
-              const SizedBox(height: 20),
-
-              // Experience
-              KoreTextField(
-                label: "Years of Experience",
-                hint: "5",
-                controller: experienceController,
-                keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 20),
 

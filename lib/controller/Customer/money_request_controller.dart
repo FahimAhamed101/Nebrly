@@ -122,7 +122,7 @@ class MoneyRequestController extends GetxController {
         barrierDismissible: false,
       );
 
-      final response = await _apiService.post(
+      final response = await _apiService.patch(
         'money-requests/$requestId/accept',
         {},
       );
@@ -204,7 +204,7 @@ class MoneyRequestController extends GetxController {
         barrierDismissible: false,
       );
 
-      final response = await _apiService.post(
+      final response = await _apiService.patch(
         'money-requests/$requestId/cancel',
         {},
       );

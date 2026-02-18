@@ -2,11 +2,12 @@
 import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import '../../utils/app_contants.dart';
 import '../../utils/tokenService.dart';
 import '../models/service_request.dart';
 
 class HomeApiService extends GetxService {
-  static const String baseUrl = 'https://naibrly-backend.onrender.com/api';
+  static const String baseUrl = '${AppConstants.BASE_URL}/api';
 
   String? get _token {
     final tokenService = Get.find<TokenService>();
@@ -684,7 +685,7 @@ class HomeApiService extends GetxService {
         throw Exception('No authentication token found');
       }
 
-      final response = await http.put(
+      final response = await http.patch(
         Uri.parse('$baseUrl/service-requests/$requestId/cancel'),
         headers: {
           'Authorization': 'Bearer $token',

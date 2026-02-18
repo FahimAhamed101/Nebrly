@@ -7,6 +7,7 @@ import 'package:naibrly/utils/app_colors.dart';
 import 'package:naibrly/views/base/AppText/appText.dart';
 import 'package:naibrly/views/base/appTextfield/appTextfield.dart';
 import 'package:naibrly/views/base/primaryButton/primary_button.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../controller/Customer/authCustomer/signupController.dart';
 import '../../../../utils/app_icon.dart';
 import 'base/countryTextfield.dart';
@@ -21,16 +22,81 @@ class SignUp extends StatefulWidget {
 
 class _SignUpState extends State<SignUp> {
   final SignUpController controller = Get.put(SignUpController());
+  static final Uri _termsUrl = Uri.parse('https://naibrly.com/terms');
+  static final Uri _privacyUrl = Uri.parse('https://naibrly.com/privacy');
+  static const List<String> _usStates = [
+    'AL',
+    'AK',
+    'AZ',
+    'AR',
+    'CA',
+    'CO',
+    'CT',
+    'DE',
+    'FL',
+    'GA',
+    'HI',
+    'ID',
+    'IL',
+    'IN',
+    'IA',
+    'KS',
+    'KY',
+    'LA',
+    'ME',
+    'MD',
+    'MA',
+    'MI',
+    'MN',
+    'MS',
+    'MO',
+    'MT',
+    'NE',
+    'NV',
+    'NH',
+    'NJ',
+    'NM',
+    'NY',
+    'NC',
+    'ND',
+    'OH',
+    'OK',
+    'OR',
+    'PA',
+    'RI',
+    'SC',
+    'SD',
+    'TN',
+    'TX',
+    'UT',
+    'VT',
+    'VA',
+    'WA',
+    'WV',
+    'WI',
+    'WY',
+    'DC',
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: AppColors.White,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(CupertinoIcons.back, color: AppColors.black),
+          onPressed: () {
+            Get.back();
+          },
+        ),
+      ),
       backgroundColor: AppColors.White,
       body: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 18.0),
           child: Column(
               children: [
-                const SizedBox(height: 45,),
+                const SizedBox(height: 10,),
                 Align(alignment: Alignment.center, child: Image.asset("assets/images/Frame 2147226486.png",width: 155,height: 48,),),
                 const SizedBox(height: 25,),
                 Row(
@@ -75,6 +141,14 @@ class _SignUpState extends State<SignUp> {
                   controller: controller.password,
                   // ✅ use passwordController here
                   hint: "Password",
+                  helperText:
+                      "Password must contain:\n- Minimum 6 characters\n- 1 number\n- 1 capital letter\n- 1 special character",
+                  helperStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.black50,
+                  ),
+                  helperMaxLines: 5,
                   suffix: IconButton(
                     icon: Icon(
                       controller.showHide.value
@@ -121,18 +195,70 @@ class _SignUpState extends State<SignUp> {
                 const SizedBox(height: 10,),
                 Row(
                   children: [
-                    Expanded(child: AppTextField(controller: controller.state, hint: "State")),
+                    Expanded(child: AppTextField(controller: controller.aptSuite, hint: "Apt / Suite")),
                     const SizedBox(width: 10,),
-                    Expanded(child: AppTextField(controller: controller.zipCode, hint: "Zib Code",keyboardType: TextInputType.number,)),
+                    Expanded(child: AppTextField(controller: controller.city, hint: "City")),
 
                   ],
                 ),
                 const SizedBox(height: 10,),
                 Row(
                   children: [
-                    Expanded(child: AppTextField(controller: controller.city, hint: "City")),
+                    Expanded(child: AppTextField(controller: controller.zipCode, hint: "Zip code",keyboardType: TextInputType.number,)),
                     const SizedBox(width: 10,),
-                    Expanded(child: AppTextField(controller: controller.aptSuite, hint: "Apt / Suite")),
+                    Expanded(
+                      child: Obx(
+                            () => DropdownButtonFormField<String>(
+                          value: controller.selectedState.value.isEmpty
+                              ? null
+                              : controller.selectedState.value,
+                          items: _usStates
+                              .map((state) => DropdownMenuItem<String>(
+                            value: state,
+                            child: Text(state),
+                          ))
+                              .toList(),
+                          onChanged: (value) {
+                            controller.selectedState.value = value ?? '';
+                            controller.state.text = value ?? '';
+                          },
+                          icon: const Icon(
+                            CupertinoIcons.chevron_down,
+                            size: 16,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: "State",
+                            labelStyle: const TextStyle(
+                              fontWeight: FontWeight.w400,
+                              color: AppColors.black50,
+                              fontSize: 14,
+                            ),
+                            floatingLabelStyle: const TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.primary,
+                              fontSize: 14,
+                            ),
+                            filled: true,
+                            fillColor: AppColors.White,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 13, horizontal: 12),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                width: 1,
+                                color: AppColors.black50.withOpacity(0.60),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                width: 1.5,
+                                color: AppColors.black,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
 
                   ],
                 ),
@@ -172,7 +298,7 @@ class _SignUpState extends State<SignUp> {
                           children: [
                             const TextSpan(text: "I agree to the ",style: TextStyle(fontWeight: FontWeight.w500,color: AppColors.black)),
                             TextSpan(
-                              text: "Terms of Service & Privacy Policy",
+                              text: "Terms of Service",
                               style: const TextStyle(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.w500,
@@ -180,8 +306,20 @@ class _SignUpState extends State<SignUp> {
                               ),
                               recognizer: TapGestureRecognizer()
                                 ..onTap = () {
-                                  // 👇 Handle tap here (navigate or open URL)
-                                  Get.toNamed('/privacyPolicy');
+                                  _openUrl(_termsUrl);
+                                },
+                            ),
+                            const TextSpan(text: " and ",style: TextStyle(fontWeight: FontWeight.w500,color: AppColors.black)),
+                            TextSpan(
+                              text: "Privacy Policy",
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w500,
+                                decoration: TextDecoration.underline,
+                              ),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () {
+                                  _openUrl(_privacyUrl);
                                 },
                             ),
 
@@ -204,7 +342,7 @@ class _SignUpState extends State<SignUp> {
                       final confirmPassword = controller.confirmPassword.text;
                       final phone = controller.phoneNumber.text;
                       final street = controller.streetName.text;
-                      final state = controller.state.text;
+                      final state = controller.selectedState.value.trim();
                       final zipcode = controller.zipCode.text;
                       final aptsuit = controller.aptSuite.text;
                       final city = controller.city.text;
@@ -222,6 +360,13 @@ class _SignUpState extends State<SignUp> {
                       }
                       if (password.isEmpty) {
                         showError(context, "Password is required");
+                        return;
+                      }
+                      if (!controller.isPasswordValid()) {
+                        showError(
+                          context,
+                          "Password must be at least 6 characters and include 1 number, 1 capital letter, and 1 special character",
+                        );
                         return;
                       }
                       if (phone.isEmpty) {
@@ -333,6 +478,13 @@ class _SignUpState extends State<SignUp> {
         backgroundColor: Colors.green,
       ),
     );
+  }
+
+  Future<void> _openUrl(Uri url) async {
+    final ok = await launchUrl(url, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      showError(context, "Could not open link");
+    }
   }
 
   Widget orDivided(){

@@ -5,12 +5,13 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
 import 'package:http_parser/http_parser.dart' show MediaType;
 
+import '../../utils/app_contants.dart';
 import '../../utils/tokenService.dart';
 import '../models/provider_model.dart';
 // Import TokenService
 
 class ApiService extends GetxService {
-  static const String baseUrl = 'https://naibrly-backend.onrender.com';
+  static const String baseUrl = AppConstants.BASE_URL;
 
   // Get TokenService instance
   TokenService get _tokenService => Get.find<TokenService>();
@@ -169,6 +170,7 @@ class ApiService extends GetxService {
       'businessHoursEnd': request.businessHoursEnd,
       'hourlyRate': request.hourlyRate,
       'businessAddressStreet': request.businessAddressStreet,
+      'businessAddressAptSuite': request.businessAddressAptSuite,
       'businessAddressCity': request.businessAddressCity,
       'businessAddressState': request.businessAddressState,
       'businessAddressZipCode': request.businessAddressZipCode,

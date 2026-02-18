@@ -31,8 +31,8 @@ class SignUpController extends GetxController {
   final TextEditingController aptSuite = TextEditingController();
 
   RxBool isLoading = false.obs;
-  final RxBool showHide = false.obs; // ✅ Password hidden by default
-  final RxBool showHide1 = false.obs; // ✅ Confirm password hidden by default
+  final RxBool showHide = true.obs; // ✅ Password hidden by default
+  final RxBool showHide1 = true.obs; // ✅ Confirm password hidden by default
   var privacy = false.obs;
   var selectedState = ''.obs; // ✅ For state dropdown
 

@@ -20,7 +20,7 @@ class CustomCountryCodePicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return IntlPhoneField(
-      initialValue: initialCountryCode,
+      initialValue: '',
       showCursor: true,
       readOnly: false, // Prevents manual number input
       showDropdownIcon: true,

@@ -7,6 +7,9 @@ class AppTextField extends StatelessWidget {
   final bool? autocorrect;
   final bool? enableSuggestions;
   final Widget? suffix;
+  final String? helperText;
+  final TextStyle? helperStyle;
+  final int? helperMaxLines;
   final TextInputType keyboardType;
   final TextInputAction textInputAction;
   final Function(String)? onSubmitted;
@@ -19,6 +22,9 @@ class AppTextField extends StatelessWidget {
     required this.hint,
     this.obscure = false,
     this.suffix,
+    this.helperText,
+    this.helperStyle,
+    this.helperMaxLines,
     this.keyboardType = TextInputType.text,
     this.textInputAction = TextInputAction.done,
     this.onSubmitted,
@@ -54,6 +60,9 @@ class AppTextField extends StatelessWidget {
           color: AppColors.primary,  // Green when focused
           fontSize: 14,
         ),
+        helperText: helperText,
+        helperStyle: helperStyle,
+        helperMaxLines: helperMaxLines,
         suffixIcon: suffix,
         filled: true,
         fillColor: AppColors.White,

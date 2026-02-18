@@ -2,11 +2,12 @@
 import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import '../../utils/app_contants.dart';
 import '../../utils/tokenService.dart';
 import '../models/order.dart';
 
 class OrdersApiService extends GetxService {
-  static const String baseUrl = 'https://naibrly-backend.onrender.com/api';
+  static const String baseUrl = '${AppConstants.BASE_URL}/api';
 
   String? get _token {
     final tokenService = Get.find<TokenService>();
@@ -74,7 +75,9 @@ class OrdersApiService extends GetxService {
     final serviceRequestsRaw = responseData['serviceRequests'];
     List<dynamic>? serviceRequests;
 
-    if (serviceRequestsRaw is List) {
+    if (serviceRequestsRaw is Map<String, dynamic>) {
+      serviceRequests = serviceRequestsRaw['items'] as List<dynamic>?;
+    } else if (serviceRequestsRaw is List) {
       serviceRequests = serviceRequestsRaw;
     } else if (serviceRequestsRaw is int && serviceRequestsRaw == 0) {
       serviceRequests = [];
@@ -100,7 +103,7 @@ class OrdersApiService extends GetxService {
     List<dynamic>? bundleRequests;
 
     if (bundlesRaw is Map<String, dynamic>) {
-      bundleRequests = bundlesRaw['requests'] as List<dynamic>?;
+      bundleRequests = bundlesRaw['items'] as List<dynamic>?;
     } else if (bundlesRaw is int && bundlesRaw == 0) {
       bundleRequests = [];
     }

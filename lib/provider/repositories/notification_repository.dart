@@ -51,7 +51,7 @@ class NotificationRepository {
       throw Exception('No authentication token found');
     }
 
-    final response = await http.put(
+    final response = await http.patch(
       Uri.parse('$baseUrl/notifications/$notificationId/read'),
 
 
@@ -76,11 +76,11 @@ class NotificationRepository {
     }
 
 
-    final response = await http.put(
-      Uri.parse('$baseUrl/notifications/mark-all-read'),
+    final response = await http.patch(
+      Uri.parse('$baseUrl/notifications/read-all'),
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer YOUR_TOKEN_HERE',
+        'Authorization': 'Bearer $token',
       },
     );
 

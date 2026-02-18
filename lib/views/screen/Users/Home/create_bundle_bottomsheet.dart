@@ -10,6 +10,7 @@ import 'package:naibrly/provider/widgets/custom_single_select_dropdown.dart';
 import 'package:naibrly/views/base/pickers/custom_date_picker.dart';
 import 'package:naibrly/views/base/pickers/custom_time_picker.dart';
 import 'package:get/get.dart';
+import '../../../../utils/app_contants.dart';
 import '../../../base/appTextfield/appTextfield.dart';
 import '../../../base/primaryButton/primary_button.dart';
 
@@ -338,7 +339,7 @@ class _CreateBundleBottomSheetState extends State<CreateBundleBottomSheet> {
 
                     // Print the request for debugging
                     print("📦 Creating bundle with data:");
-                    print("URL: https://naibrly-backend.onrender.com/api/bundles/create");
+                    print("URL: ${AppConstants.BASE_URL}/api/bundles/create");
                     print("Request Body: $bundleData");
 
                     // Call the controller method to create bundle

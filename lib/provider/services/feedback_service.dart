@@ -4,6 +4,7 @@ import 'dart:convert';
 
 // Fixed import path
 import '../../utils/tokenService.dart';
+import '../../utils/app_contants.dart';
 import '../models/client_feedback.dart';
 
 class FeedbackService extends GetxService {
@@ -23,7 +24,7 @@ class FeedbackService extends GetxService {
 
     // FIXED: Use actual base URL instead of placeholder
     final response = await http.get(
-      Uri.parse('https://naibrly-backend.onrender.com/api/providers/reviews/my?page=$page&limit=$limit'),
+      Uri.parse('${AppConstants.BASE_URL}/api/providers/reviews/my?page=$page&limit=$limit'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -31,7 +32,7 @@ class FeedbackService extends GetxService {
     );
 
     print('=== API Response Details ===');
-    print('URL: https://naibrly-backend.onrender.com/api/providers/reviews/my?page=$page&limit=$limit');
+    print('URL: ${AppConstants.BASE_URL}/api/providers/reviews/my?page=$page&limit=$limit');
     print('Status Code: ${response.statusCode}');
     print('Response Body: ${response.body}');
     print('============================');

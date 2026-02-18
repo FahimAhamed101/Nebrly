@@ -69,12 +69,7 @@ class PaymentController extends GetxController {
           final requests = await _paymentService.checkMoneyRequestByServiceRequestIdForCustomer(
             serviceRequestId: requestId,
           );
-          if (!hasRequest) {
-            final requests2 = await _paymentService.checkMoneyRequestByRequestId(
-              requestId: requestId,
-            );
-            hasRequest = requests2.isNotEmpty;
-          }
+          hasRequest = requests.isNotEmpty;
         }
       }
 

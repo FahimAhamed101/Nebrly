@@ -10,10 +10,18 @@ class MainApiService extends GetxService {
   // Static method for provider service details
   static Future<Map<String, dynamic>> getProviderServiceDetails(
       String providerId,
-      String serviceName,
-      ) async {
+      String serviceName, {
+        int page = 1,
+        int limit = 10,
+      }) async {
     try {
-      final url = '${baseUrl}providers/$providerId/services/$serviceName';
+      final uri = Uri.parse('${baseUrl}providers/$providerId/services/$serviceName').replace(
+        queryParameters: {
+          'page': page.toString(),
+          'limit': limit.toString(),
+        },
+      );
+      final url = uri.toString();
       print('Fetching provider data from: $url');
 
       final response = await http.get(

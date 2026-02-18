@@ -49,7 +49,7 @@ class ServiceAreaRepository {
     }
 
     final response = await http.post(
-      Uri.parse('$baseUrl/providers/service-areas'),
+      Uri.parse('$baseUrl/providers/service-areas/add'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -69,11 +69,16 @@ class ServiceAreaRepository {
   }
 
   Future<Map<String, dynamic>> removeServiceArea(String areaId) async {
+    final token = _token;
+    if (token == null || token.isEmpty) {
+      throw Exception('No authentication token found');
+    }
+
     final response = await http.delete(
       Uri.parse('$baseUrl/providers/service-areas/$areaId'),
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer YOUR_TOKEN_HERE',
+        'Authorization': 'Bearer $token',
       },
     );
 
